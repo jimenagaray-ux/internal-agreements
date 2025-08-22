@@ -633,38 +633,63 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
 
   // Funciones para manejar la matriz de tasas
   const openRatesMatrix = (scaleId: string, scaleName: string) => {
+    console.log('Opening rates matrix for scale:', scaleId, scaleName)
+    
     try {
-      // Inicializar matriz si no existe
-      if (!ratesMatrix[scaleId]) {
-        const initialMatrix: {[paymentMethod: string]: {[liberationDays: string]: string}} = {}
-        paymentMethods.forEach(pm => {
-          initialMatrix[pm.id] = {}
-          liberationDays.forEach(ld => {
-            initialMatrix[pm.id][ld.id] = ''
-          })
-        })
-        setRatesMatrix(prev => ({ ...prev, [scaleId]: initialMatrix }))
+      // Validar entrada
+      if (!scaleId || typeof scaleId !== 'string') {
+        console.error('Invalid scaleId provided:', scaleId)
+        return
       }
 
-      // Inicializar errores si no existen
-      if (!matrixErrors[scaleId]) {
-        const initialErrors: {[paymentMethod: string]: {[liberationDays: string]: string}} = {}
-        paymentMethods.forEach(pm => {
-          initialErrors[pm.id] = {}
-          liberationDays.forEach(ld => {
-            initialErrors[pm.id][ld.id] = ''
-          })
-        })
-        setMatrixErrors(prev => ({ ...prev, [scaleId]: initialErrors }))
-      }
-
+      // Primero abrir el modal
       setRatesMatrixPopup({
         isOpen: true,
         scaleId,
         scaleName: scaleName || `Escala ${scaleId}`
       })
+
+      // Luego inicializar datos en el próximo tick
+      setTimeout(() => {
+        // Inicializar matriz si no existe
+        setRatesMatrix(prev => {
+          if (!prev[scaleId]) {
+            const initialMatrix: {[paymentMethod: string]: {[liberationDays: string]: string}} = {}
+            paymentMethods.forEach(pm => {
+              initialMatrix[pm.id] = {}
+              liberationDays.forEach(ld => {
+                initialMatrix[pm.id][ld.id] = ''
+              })
+            })
+            return { ...prev, [scaleId]: initialMatrix }
+          }
+          return prev
+        })
+
+        // Inicializar errores si no existen
+        setMatrixErrors(prev => {
+          if (!prev[scaleId]) {
+            const initialErrors: {[paymentMethod: string]: {[liberationDays: string]: string}} = {}
+            paymentMethods.forEach(pm => {
+              initialErrors[pm.id] = {}
+              liberationDays.forEach(ld => {
+                initialErrors[pm.id][ld.id] = ''
+              })
+            })
+            return { ...prev, [scaleId]: initialErrors }
+          }
+          return prev
+        })
+      }, 0)
+      
     } catch (error) {
       console.error('Error opening rates matrix:', error)
+      // Cerrar modal si hay error
+      setRatesMatrixPopup({
+        isOpen: false,
+        scaleId: null,
+        scaleName: ''
+      })
     }
   }
 
@@ -1623,19 +1648,20 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                           )}
 
                           {/* Modal de Matriz de Tasas */}
-                          {ratesMatrixPopup.isOpen && ratesMatrixPopup.scaleId && (
-                            <Dialog open={ratesMatrixPopup.isOpen} onOpenChange={closeRatesMatrix}>
-                              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-                                <DialogHeader>
-                                  <DialogTitle className="flex items-center gap-2">
-                                    <Calculator className="w-5 h-5" />
-                                    Configurar Tasas - {ratesMatrixPopup.scaleName}
-                                  </DialogTitle>
-                                  <DialogDescription>
-                                    Configure las tasas específicas por medio de pago y días de liberación para esta escala.
-                                  </DialogDescription>
-                                </DialogHeader>
+                          <Dialog open={ratesMatrixPopup.isOpen} onOpenChange={closeRatesMatrix}>
+                            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                  <Calculator className="w-5 h-5" />
+                                  Configurar Tasas - {ratesMatrixPopup.scaleName || 'Nueva Escala'}
+                                </DialogTitle>
+                                <DialogDescription>
+                                  Configure las tasas específicas por medio de pago y días de liberación para esta escala.
+                                </DialogDescription>
+                              </DialogHeader>
 
+                              {ratesMatrixPopup.scaleId ? (
+                                <>
                                 <div className="space-y-4">
                                   <div className="overflow-x-auto">
                                     <table className="min-w-full border border-gray-200 rounded-lg">
@@ -1652,44 +1678,56 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                         </tr>
                                       </thead>
                                       <tbody className="bg-white">
-                                        {paymentMethods.map((pm, pmIndex) => (
-                                          <tr key={pm.id} className={pmIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                            <td className="px-4 py-3 font-medium text-gray-900 border-r border-gray-200">
-                                              {pm.name}
-                                            </td>
-                                            {liberationDays.map(day => {
-                                              const scaleId = ratesMatrixPopup.scaleId
-                                              if (!scaleId) return null
-                                              
-                                              const error = matrixErrors[scaleId]?.[pm.id]?.[day.id] || ''
-                                              const currentValue = ratesMatrix[scaleId]?.[pm.id]?.[day.id] || ''
-                                              
-                                              return (
-                                                <td key={day.id} className="px-4 py-3 border-r border-gray-200 last:border-r-0">
-                                                  <div className="space-y-1">
-                                                    <Input
-                                                      value={currentValue}
-                                                      onChange={(e) => {
-                                                        if (scaleId) {
-                                                          updateRateInMatrix(scaleId, pm.id, day.id, e.target.value)
-                                                        }
-                                                      }}
-                                                      placeholder="0.00"
-                                                      type="number"
-                                                      min="0"
-                                                      max="100"
-                                                      step="0.01"
-                                                      className={`w-full text-sm text-center ${error ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                                    />
-                                                    {error && (
-                                                      <p className="text-xs text-red-600 text-center">{error}</p>
-                                                    )}
-                                                  </div>
+                                        {paymentMethods.map((pm, pmIndex) => {
+                                          const scaleId = ratesMatrixPopup.scaleId
+                                          if (!scaleId) {
+                                            return (
+                                              <tr key={pm.id}>
+                                                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                                                  Cargando datos de la matriz...
                                                 </td>
-                                              )
-                                            })}
-                                          </tr>
-                                        ))}
+                                              </tr>
+                                            )
+                                          }
+
+                                          return (
+                                            <tr key={pm.id} className={pmIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                              <td className="px-4 py-3 font-medium text-gray-900 border-r border-gray-200">
+                                                {pm.name}
+                                              </td>
+                                              {liberationDays.map(day => {
+                                                const error = matrixErrors[scaleId]?.[pm.id]?.[day.id] || ''
+                                                const currentValue = ratesMatrix[scaleId]?.[pm.id]?.[day.id] || ''
+                                                
+                                                return (
+                                                  <td key={day.id} className="px-4 py-3 border-r border-gray-200 last:border-r-0">
+                                                    <div className="space-y-1">
+                                                      <Input
+                                                        value={currentValue}
+                                                        onChange={(e) => {
+                                                          try {
+                                                            updateRateInMatrix(scaleId, pm.id, day.id, e.target.value)
+                                                          } catch (error) {
+                                                            console.error('Error updating rate:', error)
+                                                          }
+                                                        }}
+                                                        placeholder="0.00"
+                                                        type="number"
+                                                        min="0"
+                                                        max="100"
+                                                        step="0.01"
+                                                        className={`w-full text-sm text-center ${error ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                                      />
+                                                      {error && (
+                                                        <p className="text-xs text-red-600 text-center">{error}</p>
+                                                      )}
+                                                    </div>
+                                                  </td>
+                                                )
+                                              })}
+                                            </tr>
+                                          )
+                                        })}
                                       </tbody>
                                     </table>
                                   </div>
@@ -1768,9 +1806,21 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                     </MPButton>
                                   </div>
                                 </DialogFooter>
-                              </DialogContent>
-                            </Dialog>
-                          )}
+                                </>
+                              ) : (
+                                <div className="p-8 text-center">
+                                  <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+                                  <h3 className="text-lg font-medium text-gray-900 mb-2">Error al cargar matriz</h3>
+                                  <p className="text-gray-600 mb-4">
+                                    No se pudo cargar la matriz de tasas. Por favor, inténtalo de nuevo.
+                                  </p>
+                                  <MPButton onClick={closeRatesMatrix}>
+                                    Cerrar
+                                  </MPButton>
+                                </div>
+                              )}
+                            </DialogContent>
+                          </Dialog>
 
                           {activePointSubtab === "financing" && (
                             <div className="space-y-4">
