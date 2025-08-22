@@ -633,23 +633,39 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
 
   // Funciones para manejar la matriz de tasas
   const openRatesMatrix = (scaleId: string, scaleName: string) => {
-    // Inicializar matriz si no existe
-    if (!ratesMatrix[scaleId]) {
-      const initialMatrix: {[paymentMethod: string]: {[liberationDays: string]: string}} = {}
-      paymentMethods.forEach(pm => {
-        initialMatrix[pm.id] = {}
-        liberationDays.forEach(ld => {
-          initialMatrix[pm.id][ld.id] = ''
+    try {
+      // Inicializar matriz si no existe
+      if (!ratesMatrix[scaleId]) {
+        const initialMatrix: {[paymentMethod: string]: {[liberationDays: string]: string}} = {}
+        paymentMethods.forEach(pm => {
+          initialMatrix[pm.id] = {}
+          liberationDays.forEach(ld => {
+            initialMatrix[pm.id][ld.id] = ''
+          })
         })
-      })
-      setRatesMatrix(prev => ({ ...prev, [scaleId]: initialMatrix }))
-    }
+        setRatesMatrix(prev => ({ ...prev, [scaleId]: initialMatrix }))
+      }
 
-    setRatesMatrixPopup({
-      isOpen: true,
-      scaleId,
-      scaleName
-    })
+      // Inicializar errores si no existen
+      if (!matrixErrors[scaleId]) {
+        const initialErrors: {[paymentMethod: string]: {[liberationDays: string]: string}} = {}
+        paymentMethods.forEach(pm => {
+          initialErrors[pm.id] = {}
+          liberationDays.forEach(ld => {
+            initialErrors[pm.id][ld.id] = ''
+          })
+        })
+        setMatrixErrors(prev => ({ ...prev, [scaleId]: initialErrors }))
+      }
+
+      setRatesMatrixPopup({
+        isOpen: true,
+        scaleId,
+        scaleName: scaleName || `Escala ${scaleId}`
+      })
+    } catch (error) {
+      console.error('Error opening rates matrix:', error)
+    }
   }
 
   const closeRatesMatrix = () => {
@@ -745,27 +761,34 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
 
   // Función para obtener resumen de tasas de una escala
   const getRatesSummary = (scaleId: string) => {
-    const matrix = ratesMatrix[scaleId]
-    const errors = matrixErrors[scaleId]
-    
-    if (!matrix) return 'Configurar tasas'
-    
-    const filledRates = Object.values(matrix).flatMap(pm => 
-      Object.values(pm).filter(rate => rate && rate.trim() !== '')
-    )
-    
-    if (filledRates.length === 0) return 'Configurar tasas'
-    
-    // Verificar si hay errores
-    const hasErrors = errors && Object.values(errors).some(pm => 
-      Object.values(pm).some(error => error && error.trim() !== '')
-    )
-    
-    if (hasErrors) {
-      return `${filledRates.length} tasas (con errores)`
+    try {
+      if (!scaleId) return 'Configurar tasas'
+      
+      const matrix = ratesMatrix[scaleId]
+      const errors = matrixErrors[scaleId]
+      
+      if (!matrix) return 'Configurar tasas'
+      
+      const filledRates = Object.values(matrix).flatMap(pm => 
+        pm ? Object.values(pm).filter(rate => rate && rate.trim() !== '') : []
+      )
+      
+      if (filledRates.length === 0) return 'Configurar tasas'
+      
+      // Verificar si hay errores
+      const hasErrors = errors && Object.values(errors).some(pm => 
+        pm ? Object.values(pm).some(error => error && error.trim() !== '') : false
+      )
+      
+      if (hasErrors) {
+        return `${filledRates.length} tasas (con errores)`
+      }
+      
+      return `${filledRates.length} tasas configuradas`
+    } catch (error) {
+      console.error('Error getting rates summary:', error)
+      return 'Configurar tasas'
     }
-    
-    return `${filledRates.length} tasas configuradas`
   }
 
 
@@ -1635,13 +1658,22 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                               {pm.name}
                                             </td>
                                             {liberationDays.map(day => {
-                                              const error = matrixErrors[ratesMatrixPopup.scaleId!]?.[pm.id]?.[day.id] || ''
+                                              const scaleId = ratesMatrixPopup.scaleId
+                                              if (!scaleId) return null
+                                              
+                                              const error = matrixErrors[scaleId]?.[pm.id]?.[day.id] || ''
+                                              const currentValue = ratesMatrix[scaleId]?.[pm.id]?.[day.id] || ''
+                                              
                                               return (
                                                 <td key={day.id} className="px-4 py-3 border-r border-gray-200 last:border-r-0">
                                                   <div className="space-y-1">
                                                     <Input
-                                                      value={ratesMatrix[ratesMatrixPopup.scaleId!]?.[pm.id]?.[day.id] || ''}
-                                                      onChange={(e) => updateRateInMatrix(ratesMatrixPopup.scaleId!, pm.id, day.id, e.target.value)}
+                                                      value={currentValue}
+                                                      onChange={(e) => {
+                                                        if (scaleId) {
+                                                          updateRateInMatrix(scaleId, pm.id, day.id, e.target.value)
+                                                        }
+                                                      }}
                                                       placeholder="0.00"
                                                       type="number"
                                                       min="0"
@@ -1673,27 +1705,32 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                 <DialogFooter className="flex flex-col gap-3">
                                   {/* Mostrar alertas de validación */}
                                   {ratesMatrixPopup.scaleId && (() => {
-                                    const validation = validateScaleMatrix(ratesMatrixPopup.scaleId!)
-                                    return (
-                                      <>
-                                        {validation.hasErrors && (
-                                          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                            <AlertTriangle className="w-4 h-4 text-red-600" />
-                                            <p className="text-sm text-red-700">
-                                              Hay errores en las tasas. Corrígelos antes de guardar.
-                                            </p>
-                                          </div>
-                                        )}
-                                        {validation.filledCount === 0 && (
-                                          <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                            <AlertTriangle className="w-4 h-4 text-amber-600" />
-                                            <p className="text-sm text-amber-700">
-                                              Debe configurar al menos una tasa para esta escala.
-                                            </p>
-                                          </div>
-                                        )}
-                                      </>
-                                    )
+                                    try {
+                                      const validation = validateScaleMatrix(ratesMatrixPopup.scaleId!)
+                                      return (
+                                        <>
+                                          {validation.hasErrors && (
+                                            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                              <AlertTriangle className="w-4 h-4 text-red-600" />
+                                              <p className="text-sm text-red-700">
+                                                Hay errores en las tasas. Corrígelos antes de guardar.
+                                              </p>
+                                            </div>
+                                          )}
+                                          {validation.filledCount === 0 && (
+                                            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                              <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                              <p className="text-sm text-amber-700">
+                                                Debe configurar al menos una tasa para esta escala.
+                                              </p>
+                                            </div>
+                                          )}
+                                        </>
+                                      )
+                                    } catch (error) {
+                                      console.error('Error validating matrix:', error)
+                                      return null
+                                    }
                                   })()}
                                   
                                   <div className="flex gap-3 justify-end">
@@ -1705,15 +1742,27 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                     </MPButton>
                                     <MPButton 
                                       onClick={() => {
-                                        const validation = validateScaleMatrix(ratesMatrixPopup.scaleId!)
-                                        if (!validation.hasErrors && validation.filledCount > 0) {
-                                          closeRatesMatrix()
+                                        try {
+                                          if (ratesMatrixPopup.scaleId) {
+                                            const validation = validateScaleMatrix(ratesMatrixPopup.scaleId)
+                                            if (!validation.hasErrors && validation.filledCount > 0) {
+                                              closeRatesMatrix()
+                                            }
+                                          }
+                                        } catch (error) {
+                                          console.error('Error saving matrix:', error)
                                         }
                                       }}
-                                      disabled={ratesMatrixPopup.scaleId ? (() => {
-                                        const validation = validateScaleMatrix(ratesMatrixPopup.scaleId!)
-                                        return validation.hasErrors || validation.filledCount === 0
-                                      })() : false}
+                                      disabled={(() => {
+                                        try {
+                                          if (!ratesMatrixPopup.scaleId) return true
+                                          const validation = validateScaleMatrix(ratesMatrixPopup.scaleId)
+                                          return validation.hasErrors || validation.filledCount === 0
+                                        } catch (error) {
+                                          console.error('Error checking validation:', error)
+                                          return true
+                                        }
+                                      })()}
                                     >
                                       Guardar Tasas
                                     </MPButton>
