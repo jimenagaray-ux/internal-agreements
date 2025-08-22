@@ -157,6 +157,36 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
 
   // Estado para errores de validación de escalas
   const [processingScaleErrors, setProcessingScaleErrors] = useState<{[key: string]: {[field: string]: string}}>({})
+
+  // Estado para matriz de tasas popup
+  const [ratesMatrixPopup, setRatesMatrixPopup] = useState<{
+    isOpen: boolean
+    scaleId: string | null
+    scaleName: string
+  }>({
+    isOpen: false,
+    scaleId: null,
+    scaleName: ''
+  })
+
+  // Estado para matriz de tasas por escala
+  const [ratesMatrix, setRatesMatrix] = useState<{[scaleId: string]: {[paymentMethod: string]: {[liberationDays: string]: string}}}>({})
+
+  // Definir medios de pago y días de liberación
+  const paymentMethods = [
+    { id: 'debit_card', name: 'Tarjeta de débito' },
+    { id: 'credit_card', name: 'Tarjeta de crédito' },
+    { id: 'prepaid_card', name: 'Tarjeta prepaga' },
+    { id: 'pix', name: 'PIX' }
+  ]
+
+  const liberationDays = [
+    { id: 'instant', name: 'Al instante' },
+    { id: '2_days', name: '2 días' },
+    { id: '3_days', name: '3 días' },
+    { id: '10_days', name: '10 días' },
+    { id: '15_days', name: '15 días' }
+  ]
   
   const [formData, setFormData] = useState<FormData>({
     type: preselectedType || "",
@@ -596,6 +626,61 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
 
       return updated
     })
+  }
+
+  // Funciones para manejar la matriz de tasas
+  const openRatesMatrix = (scaleId: string, scaleName: string) => {
+    // Inicializar matriz si no existe
+    if (!ratesMatrix[scaleId]) {
+      const initialMatrix: {[paymentMethod: string]: {[liberationDays: string]: string}} = {}
+      paymentMethods.forEach(pm => {
+        initialMatrix[pm.id] = {}
+        liberationDays.forEach(ld => {
+          initialMatrix[pm.id][ld.id] = ''
+        })
+      })
+      setRatesMatrix(prev => ({ ...prev, [scaleId]: initialMatrix }))
+    }
+
+    setRatesMatrixPopup({
+      isOpen: true,
+      scaleId,
+      scaleName
+    })
+  }
+
+  const closeRatesMatrix = () => {
+    setRatesMatrixPopup({
+      isOpen: false,
+      scaleId: null,
+      scaleName: ''
+    })
+  }
+
+  const updateRateInMatrix = (scaleId: string, paymentMethod: string, liberationDay: string, rate: string) => {
+    setRatesMatrix(prev => ({
+      ...prev,
+      [scaleId]: {
+        ...prev[scaleId],
+        [paymentMethod]: {
+          ...prev[scaleId]?.[paymentMethod],
+          [liberationDay]: rate
+        }
+      }
+    }))
+  }
+
+  // Función para obtener resumen de tasas de una escala
+  const getRatesSummary = (scaleId: string) => {
+    const matrix = ratesMatrix[scaleId]
+    if (!matrix) return 'Configurar tasas'
+    
+    const filledRates = Object.values(matrix).flatMap(pm => 
+      Object.values(pm).filter(rate => rate && rate.trim() !== '')
+    )
+    
+    if (filledRates.length === 0) return 'Configurar tasas'
+    return `${filledRates.length} tasas configuradas`
   }
 
 
@@ -1361,21 +1446,15 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                             </div>
                                           </td>
                                           <td className="px-4 py-3 whitespace-nowrap">
-                                            <div className="space-y-1">
-                                              <Input
-                                                value={scale.tasasAplicadas}
-                                                onChange={(e) => updateProcessingScale(scale.id, 'tasasAplicadas', e.target.value)}
-                                                placeholder="Ej: 2.5"
-                                                type="number"
-                                                min="0"
-                                                max="100"
-                                                step="0.01"
-                                                className={`w-full text-sm ${processingScaleErrors[scale.id]?.tasasAplicadas ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                              />
-                                              {processingScaleErrors[scale.id]?.tasasAplicadas && (
-                                                <p className="text-xs text-red-600">{processingScaleErrors[scale.id].tasasAplicadas}</p>
-                                              )}
-                                            </div>
+                                            <button
+                                              onClick={() => openRatesMatrix(scale.id, scale.escala || `Escala ${index + 1}`)}
+                                              className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-gray-300 hover:border-blue-300 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                                            >
+                                              <div className="flex items-center justify-between">
+                                                <span>{getRatesSummary(scale.id)}</span>
+                                                <Edit className="w-4 h-4 ml-2 text-gray-400" />
+                                              </div>
+                                            </button>
                                           </td>
                                           <td className="px-4 py-3 whitespace-nowrap text-center">
                                             <input
@@ -1424,6 +1503,84 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                 </div>
                               </div>
                             </div>
+                          )}
+
+                          {/* Modal de Matriz de Tasas */}
+                          {ratesMatrixPopup.isOpen && ratesMatrixPopup.scaleId && (
+                            <Dialog open={ratesMatrixPopup.isOpen} onOpenChange={closeRatesMatrix}>
+                              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                                <DialogHeader>
+                                  <DialogTitle className="flex items-center gap-2">
+                                    <Calculator className="w-5 h-5" />
+                                    Configurar Tasas - {ratesMatrixPopup.scaleName}
+                                  </DialogTitle>
+                                  <DialogDescription>
+                                    Configure las tasas específicas por medio de pago y días de liberación para esta escala.
+                                  </DialogDescription>
+                                </DialogHeader>
+
+                                <div className="space-y-4">
+                                  <div className="overflow-x-auto">
+                                    <table className="min-w-full border border-gray-200 rounded-lg">
+                                      <thead className="bg-gray-50">
+                                        <tr>
+                                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-r border-gray-200">
+                                            Medio de Pago
+                                          </th>
+                                          {liberationDays.map(day => (
+                                            <th key={day.id} className="px-4 py-3 text-center text-sm font-medium text-gray-700 border-r border-gray-200 last:border-r-0">
+                                              {day.name}
+                                            </th>
+                                          ))}
+                                        </tr>
+                                      </thead>
+                                      <tbody className="bg-white">
+                                        {paymentMethods.map((pm, pmIndex) => (
+                                          <tr key={pm.id} className={pmIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                            <td className="px-4 py-3 font-medium text-gray-900 border-r border-gray-200">
+                                              {pm.name}
+                                            </td>
+                                            {liberationDays.map(day => (
+                                              <td key={day.id} className="px-4 py-3 border-r border-gray-200 last:border-r-0">
+                                                <Input
+                                                  value={ratesMatrix[ratesMatrixPopup.scaleId!]?.[pm.id]?.[day.id] || ''}
+                                                  onChange={(e) => updateRateInMatrix(ratesMatrixPopup.scaleId!, pm.id, day.id, e.target.value)}
+                                                  placeholder="0.00"
+                                                  type="number"
+                                                  min="0"
+                                                  max="100"
+                                                  step="0.01"
+                                                  className="w-full text-sm text-center"
+                                                />
+                                              </td>
+                                            ))}
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <Info className="w-4 h-4 text-blue-600" />
+                                    <p className="text-sm text-blue-700">
+                                      Ingrese las tasas en porcentaje (%). Ejemplo: 2.5 para 2.5%
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <DialogFooter>
+                                  <MPButton
+                                    variant="secondary"
+                                    onClick={closeRatesMatrix}
+                                  >
+                                    Cancelar
+                                  </MPButton>
+                                  <MPButton onClick={closeRatesMatrix}>
+                                    Guardar Tasas
+                                  </MPButton>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
                           )}
 
                           {activePointSubtab === "financing" && (
