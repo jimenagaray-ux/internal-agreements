@@ -142,6 +142,18 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
     linkDePago: { porCobro: "", porOfrecerCuotas: "" },
     pointTap: { porCobro: "", porOfrecerCuotas: "" }
   })
+
+  // Estado para escalas de processing
+  const [processingScales, setProcessingScales] = useState([
+    {
+      id: crypto.randomUUID(),
+      escala: "",
+      tpvMinimo: "",
+      tpvMaximo: "",
+      tasasAplicadas: "",
+      escalaDefault: false
+    }
+  ])
   
   const [formData, setFormData] = useState<FormData>({
     type: preselectedType || "",
@@ -495,6 +507,38 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
       ...formData,
       recalculationOptions: formData.recalculationOptions.filter(option => option.id !== optionId)
     })
+  }
+
+  // Funciones para manejar escalas de processing
+  const addProcessingScale = () => {
+    setProcessingScales(prev => [...prev, {
+      id: crypto.randomUUID(),
+      escala: "",
+      tpvMinimo: "",
+      tpvMaximo: "",
+      tasasAplicadas: "",
+      escalaDefault: false
+    }])
+  }
+
+  const removeProcessingScale = (id: string) => {
+    setProcessingScales(prev => prev.filter(scale => scale.id !== id))
+  }
+
+  const updateProcessingScale = (id: string, field: string, value: string | boolean) => {
+    setProcessingScales(prev => prev.map(scale => {
+      if (scale.id === id) {
+        // Si estamos marcando como default, desmarcar los demás
+        if (field === 'escalaDefault' && value === true) {
+          setProcessingScales(current => current.map(s => 
+            s.id === id ? { ...s, [field]: value } : { ...s, escalaDefault: false }
+          ))
+          return { ...scale, [field]: value }
+        }
+        return { ...scale, [field]: value }
+      }
+      return scale
+    }))
   }
 
 
@@ -1178,35 +1222,109 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                         {/* Contenido de los subtabs */}
                         <div className="space-y-4">
                           {activePointSubtab === "processing" && (
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                               <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                                <h4 className="font-medium text-gray-900">Configuración de Tasas de Processing</h4>
+                                <h4 className="font-medium text-gray-900">Configuración de Escalas de TPV</h4>
                               </div>
                               <p className="text-sm text-gray-600">
-                                Define las tasas de procesamiento para transacciones Point.
+                                Define las escalas de TPV y sus tasas de procesamiento correspondientes.
                               </p>
-                              <div className="space-y-3">
-                                <div>
-                                  <Label className="text-sm text-gray-700">Tasa de processing (%)</Label>
-                                  <Input
-                                    value={paymentMethodConfig.point.processing.tasas}
-                                    onChange={(e) => {
-                                      setPaymentMethodConfig(prev => ({
-                                        ...prev,
-                                        point: {
-                                          ...prev.point,
-                                          processing: {
-                                            ...prev.point.processing,
-                                            tasas: e.target.value
-                                          }
-                                        }
-                                      }))
-                                    }}
-                                    placeholder="Ej: 2.5"
-                                    className="mt-1"
-                                  />
+
+                              {/* Tabla de escalas de processing */}
+                              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                <div className="overflow-x-auto">
+                                  <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                      <tr>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                          Escala
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                          TPV Mínimo
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                          TPV Máximo
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                          Tasas Aplicadas (%)
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                          Default
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                          Acciones
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                      {processingScales.map((scale, index) => (
+                                        <tr key={scale.id} className="hover:bg-gray-50">
+                                          <td className="px-4 py-3 whitespace-nowrap">
+                                            <Input
+                                              value={scale.escala}
+                                              onChange={(e) => updateProcessingScale(scale.id, 'escala', e.target.value)}
+                                              placeholder="Ej: Escala 1"
+                                              className="w-full text-sm"
+                                            />
+                                          </td>
+                                          <td className="px-4 py-3 whitespace-nowrap">
+                                            <Input
+                                              value={scale.tpvMinimo}
+                                              onChange={(e) => updateProcessingScale(scale.id, 'tpvMinimo', e.target.value)}
+                                              placeholder="Ej: 0"
+                                              className="w-full text-sm"
+                                            />
+                                          </td>
+                                          <td className="px-4 py-3 whitespace-nowrap">
+                                            <Input
+                                              value={scale.tpvMaximo}
+                                              onChange={(e) => updateProcessingScale(scale.id, 'tpvMaximo', e.target.value)}
+                                              placeholder="Ej: 10000"
+                                              className="w-full text-sm"
+                                            />
+                                          </td>
+                                          <td className="px-4 py-3 whitespace-nowrap">
+                                            <Input
+                                              value={scale.tasasAplicadas}
+                                              onChange={(e) => updateProcessingScale(scale.id, 'tasasAplicadas', e.target.value)}
+                                              placeholder="Ej: 2.5"
+                                              className="w-full text-sm"
+                                            />
+                                          </td>
+                                          <td className="px-4 py-3 whitespace-nowrap text-center">
+                                            <input
+                                              type="checkbox"
+                                              checked={scale.escalaDefault}
+                                              onChange={(e) => updateProcessingScale(scale.id, 'escalaDefault', e.target.checked)}
+                                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            />
+                                          </td>
+                                          <td className="px-4 py-3 whitespace-nowrap">
+                                            <button
+                                              onClick={() => removeProcessingScale(scale.id)}
+                                              disabled={processingScales.length <= 1}
+                                              className="text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed text-sm"
+                                            >
+                                              Eliminar
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
                                 </div>
+                              </div>
+
+                              {/* Botón para agregar nueva escala */}
+                              <div className="flex justify-start">
+                                <button
+                                  onClick={addProcessingScale}
+                                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Agregar Escala
+                                </button>
                               </div>
                             </div>
                           )}
@@ -1248,67 +1366,67 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                       </div>
                     ) : (
                       /* Contenido para otros métodos de pago (mantener lógica original) */
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Por cobro */}
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Por cobro */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-                            <h4 className="font-medium text-gray-900">Por cobro</h4>
-                          </div>
-                          <p className="text-sm text-gray-600">
-                            Los costos por cobro varían según el plazo elegido para recibir el dinero.
-                          </p>
-                          <div className="space-y-3">
-                            <div>
-                              <Label className="text-sm text-gray-700">Costo procesamiento (%)</Label>
-                              <Input
-                                value={(paymentMethodConfig[activePaymentTab as keyof typeof paymentMethodConfig] as any)?.porCobro || ""}
-                                onChange={(e) => {
-                                  setPaymentMethodConfig(prev => ({
-                                    ...prev,
-                                    [activePaymentTab]: {
-                                      ...(prev[activePaymentTab as keyof typeof prev] as any),
-                                      porCobro: e.target.value
-                                    }
-                                  }))
-                                }}
-                                placeholder="Ej: 2.5"
-                                className="mt-1"
-                              />
-                            </div>
-                          </div>
+                          <h4 className="font-medium text-gray-900">Por cobro</h4>
                         </div>
-
-                        {/* Por ofrecer cuotas */}
+                        <p className="text-sm text-gray-600">
+                          Los costos por cobro varían según el plazo elegido para recibir el dinero.
+                        </p>
                         <div className="space-y-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-                            <h4 className="font-medium text-gray-900">Por ofrecer cuotas</h4>
-                          </div>
-                          <p className="text-sm text-gray-600">
-                            Configuración adicional para ofertas de financiamiento.
-                          </p>
-                          <div className="space-y-3">
-                            <div>
-                              <Label className="text-sm text-gray-700">Costo financiamiento (%)</Label>
-                              <Input
-                                value={(paymentMethodConfig[activePaymentTab as keyof typeof paymentMethodConfig] as any)?.porOfrecerCuotas || ""}
-                                onChange={(e) => {
-                                  setPaymentMethodConfig(prev => ({
-                                    ...prev,
-                                    [activePaymentTab]: {
+                          <div>
+                            <Label className="text-sm text-gray-700">Costo procesamiento (%)</Label>
+                            <Input
+                                value={(paymentMethodConfig[activePaymentTab as keyof typeof paymentMethodConfig] as any)?.porCobro || ""}
+                              onChange={(e) => {
+                                setPaymentMethodConfig(prev => ({
+                                  ...prev,
+                                  [activePaymentTab]: {
                                       ...(prev[activePaymentTab as keyof typeof prev] as any),
-                                      porOfrecerCuotas: e.target.value
-                                    }
-                                  }))
-                                }}
-                                placeholder="Ej: 1.8"
-                                className="mt-1"
-                              />
-                            </div>
+                                    porCobro: e.target.value
+                                  }
+                                }))
+                              }}
+                              placeholder="Ej: 2.5"
+                              className="mt-1"
+                            />
                           </div>
                         </div>
                       </div>
+
+                      {/* Por ofrecer cuotas */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+                          <h4 className="font-medium text-gray-900">Por ofrecer cuotas</h4>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          Configuración adicional para ofertas de financiamiento.
+                        </p>
+                        <div className="space-y-3">
+                          <div>
+                            <Label className="text-sm text-gray-700">Costo financiamiento (%)</Label>
+                            <Input
+                                value={(paymentMethodConfig[activePaymentTab as keyof typeof paymentMethodConfig] as any)?.porOfrecerCuotas || ""}
+                              onChange={(e) => {
+                                setPaymentMethodConfig(prev => ({
+                                  ...prev,
+                                  [activePaymentTab]: {
+                                      ...(prev[activePaymentTab as keyof typeof prev] as any),
+                                    porOfrecerCuotas: e.target.value
+                                  }
+                                }))
+                              }}
+                              placeholder="Ej: 1.8"
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     )}
 
                     {/* Información adicional específica del método de pago */}
