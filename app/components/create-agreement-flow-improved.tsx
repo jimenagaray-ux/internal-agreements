@@ -131,8 +131,12 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
   
   // Estados para configuración de métodos de pago
   const [activePaymentTab, setActivePaymentTab] = useState("point")
+  const [activePointSubtab, setActivePointSubtab] = useState("processing")
   const [paymentMethodConfig, setPaymentMethodConfig] = useState({
-    point: { porCobro: "", porOfrecerCuotas: "" },
+    point: { 
+      processing: { tasas: "" },
+      financing: { tasas: "" }
+    },
     codigoQR: { porCobro: "", porOfrecerCuotas: "" },
     checkout: { porCobro: "", porOfrecerCuotas: "" },
     linkDePago: { porCobro: "", porOfrecerCuotas: "" },
@@ -1146,72 +1150,166 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                 {/* Contenido de cada pestaña */}
                 <div className="p-6">
                   <div className="space-y-6">
-                    {/* Opciones Por cobro y Por ofrecer cuotas */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Por cobro */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${
-                            activePaymentTab === "point" ? "bg-blue-500" : "bg-gray-400"
-                          }`}></div>
-                          <h4 className="font-medium text-gray-900">Por cobro</h4>
+                    {/* Contenido específico para Point con subtabs */}
+                    {activePaymentTab === "point" ? (
+                      <div className="space-y-6">
+                        {/* Subtabs para Point */}
+                        <div className="border-b border-gray-200">
+                          <nav className="flex space-x-8" aria-label="Point Subtabs">
+                            {[
+                              { id: "processing", name: "Tasas de processing" },
+                              { id: "financing", name: "Tasas de financing" }
+                            ].map((subtab) => (
+                              <button
+                                key={subtab.id}
+                                onClick={() => setActivePointSubtab(subtab.id)}
+                                className={`${
+                                  activePointSubtab === subtab.id
+                                    ? 'border-blue-500 text-blue-600 bg-blue-50'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors`}
+                              >
+                                {subtab.name}
+                              </button>
+                            ))}
+                          </nav>
                         </div>
-                        <p className="text-sm text-gray-600">
-                          Los costos por cobro varían según el plazo elegido para recibir el dinero.
-                        </p>
-                        <div className="space-y-3">
-                          <div>
-                            <Label className="text-sm text-gray-700">Costo procesamiento (%)</Label>
-                            <Input
-                              value={paymentMethodConfig[activePaymentTab as keyof typeof paymentMethodConfig]?.porCobro || ""}
-                              onChange={(e) => {
-                                setPaymentMethodConfig(prev => ({
-                                  ...prev,
-                                  [activePaymentTab]: {
-                                    ...prev[activePaymentTab as keyof typeof prev],
-                                    porCobro: e.target.value
-                                  }
-                                }))
-                              }}
-                              placeholder="Ej: 2.5"
-                              className="mt-1"
-                            />
-                          </div>
-                        </div>
-                      </div>
 
-                      {/* Por ofrecer cuotas */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${
-                            activePaymentTab === "point" ? "bg-blue-500" : "bg-gray-400"
-                          }`}></div>
-                          <h4 className="font-medium text-gray-900">Por ofrecer cuotas</h4>
+                        {/* Contenido de los subtabs */}
+                        <div className="space-y-4">
+                          {activePointSubtab === "processing" && (
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <h4 className="font-medium text-gray-900">Configuración de Tasas de Processing</h4>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                Define las tasas de procesamiento para transacciones Point.
+                              </p>
+                              <div className="space-y-3">
+                                <div>
+                                  <Label className="text-sm text-gray-700">Tasa de processing (%)</Label>
+                                  <Input
+                                    value={paymentMethodConfig.point.processing.tasas}
+                                    onChange={(e) => {
+                                      setPaymentMethodConfig(prev => ({
+                                        ...prev,
+                                        point: {
+                                          ...prev.point,
+                                          processing: {
+                                            ...prev.point.processing,
+                                            tasas: e.target.value
+                                          }
+                                        }
+                                      }))
+                                    }}
+                                    placeholder="Ej: 2.5"
+                                    className="mt-1"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {activePointSubtab === "financing" && (
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                <h4 className="font-medium text-gray-900">Configuración de Tasas de Financing</h4>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                Define las tasas de financiamiento para ofertas de cuotas Point.
+                              </p>
+                              <div className="space-y-3">
+                                <div>
+                                  <Label className="text-sm text-gray-700">Tasa de financing (%)</Label>
+                                  <Input
+                                    value={paymentMethodConfig.point.financing.tasas}
+                                    onChange={(e) => {
+                                      setPaymentMethodConfig(prev => ({
+                                        ...prev,
+                                        point: {
+                                          ...prev.point,
+                                          financing: {
+                                            ...prev.point.financing,
+                                            tasas: e.target.value
+                                          }
+                                        }
+                                      }))
+                                    }}
+                                    placeholder="Ej: 1.8"
+                                    className="mt-1"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <p className="text-sm text-gray-600">
-                          Configuración adicional para ofertas de financiamiento.
-                        </p>
+                      </div>
+                    ) : (
+                      /* Contenido para otros métodos de pago (mantener lógica original) */
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Por cobro */}
                         <div className="space-y-3">
-                          <div>
-                            <Label className="text-sm text-gray-700">Costo financiamiento (%)</Label>
-                            <Input
-                              value={paymentMethodConfig[activePaymentTab as keyof typeof paymentMethodConfig]?.porOfrecerCuotas || ""}
-                              onChange={(e) => {
-                                setPaymentMethodConfig(prev => ({
-                                  ...prev,
-                                  [activePaymentTab]: {
-                                    ...prev[activePaymentTab as keyof typeof prev],
-                                    porOfrecerCuotas: e.target.value
-                                  }
-                                }))
-                              }}
-                              placeholder="Ej: 1.8"
-                              className="mt-1"
-                            />
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+                            <h4 className="font-medium text-gray-900">Por cobro</h4>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Los costos por cobro varían según el plazo elegido para recibir el dinero.
+                          </p>
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-sm text-gray-700">Costo procesamiento (%)</Label>
+                              <Input
+                                value={(paymentMethodConfig[activePaymentTab as keyof typeof paymentMethodConfig] as any)?.porCobro || ""}
+                                onChange={(e) => {
+                                  setPaymentMethodConfig(prev => ({
+                                    ...prev,
+                                    [activePaymentTab]: {
+                                      ...(prev[activePaymentTab as keyof typeof prev] as any),
+                                      porCobro: e.target.value
+                                    }
+                                  }))
+                                }}
+                                placeholder="Ej: 2.5"
+                                className="mt-1"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Por ofrecer cuotas */}
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+                            <h4 className="font-medium text-gray-900">Por ofrecer cuotas</h4>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Configuración adicional para ofertas de financiamiento.
+                          </p>
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-sm text-gray-700">Costo financiamiento (%)</Label>
+                              <Input
+                                value={(paymentMethodConfig[activePaymentTab as keyof typeof paymentMethodConfig] as any)?.porOfrecerCuotas || ""}
+                                onChange={(e) => {
+                                  setPaymentMethodConfig(prev => ({
+                                    ...prev,
+                                    [activePaymentTab]: {
+                                      ...(prev[activePaymentTab as keyof typeof prev] as any),
+                                      porOfrecerCuotas: e.target.value
+                                    }
+                                  }))
+                                }}
+                                placeholder="Ej: 1.8"
+                                className="mt-1"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Información adicional específica del método de pago */}
                     <div className="mt-6 p-4 bg-gray-50 rounded-lg">
