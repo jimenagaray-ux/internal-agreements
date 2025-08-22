@@ -154,6 +154,9 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
       escalaDefault: false
     }
   ])
+
+  // Estado para errores de validación de escalas
+  const [processingScaleErrors, setProcessingScaleErrors] = useState<{[key: string]: {[field: string]: string}}>({})
   
   const [formData, setFormData] = useState<FormData>({
     type: preselectedType || "",
@@ -525,20 +528,74 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
     setProcessingScales(prev => prev.filter(scale => scale.id !== id))
   }
 
+  // Función de validación para escalas de processing
+  const validateProcessingScale = (scale: any, allScales: any[]) => {
+    const errors: {[field: string]: string} = {}
+
+    // Validar nombre de escala
+    if (!scale.escala.trim()) {
+      errors.escala = "El nombre de la escala es requerido"
+    } else {
+      const duplicates = allScales.filter(s => s.id !== scale.id && s.escala.trim().toLowerCase() === scale.escala.trim().toLowerCase())
+      if (duplicates.length > 0) {
+        errors.escala = "Ya existe una escala con este nombre"
+      }
+    }
+
+    // Validar TPV mínimo
+    if (!scale.tpvMinimo.trim()) {
+      errors.tpvMinimo = "TPV mínimo es requerido"
+    } else if (isNaN(Number(scale.tpvMinimo)) || Number(scale.tpvMinimo) < 0) {
+      errors.tpvMinimo = "Debe ser un número mayor o igual a 0"
+    }
+
+    // Validar TPV máximo
+    if (!scale.tpvMaximo.trim()) {
+      errors.tpvMaximo = "TPV máximo es requerido"
+    } else if (isNaN(Number(scale.tpvMaximo)) || Number(scale.tpvMaximo) < 0) {
+      errors.tpvMaximo = "Debe ser un número mayor o igual a 0"
+    } else if (scale.tpvMinimo.trim() && Number(scale.tpvMaximo) <= Number(scale.tpvMinimo)) {
+      errors.tpvMaximo = "TPV máximo debe ser mayor que TPV mínimo"
+    }
+
+    // Validar tasas aplicadas
+    if (!scale.tasasAplicadas.trim()) {
+      errors.tasasAplicadas = "La tasa es requerida"
+    } else if (isNaN(Number(scale.tasasAplicadas)) || Number(scale.tasasAplicadas) < 0 || Number(scale.tasasAplicadas) > 100) {
+      errors.tasasAplicadas = "Debe ser un número entre 0 y 100"
+    }
+
+    return errors
+  }
+
   const updateProcessingScale = (id: string, field: string, value: string | boolean) => {
-    setProcessingScales(prev => prev.map(scale => {
-      if (scale.id === id) {
-        // Si estamos marcando como default, desmarcar los demás
-        if (field === 'escalaDefault' && value === true) {
-          setProcessingScales(current => current.map(s => 
-            s.id === id ? { ...s, [field]: value } : { ...s, escalaDefault: false }
-          ))
+    setProcessingScales(prev => {
+      const updated = prev.map(scale => {
+        if (scale.id === id) {
+          // Si estamos marcando como default, desmarcar los demás
+          if (field === 'escalaDefault' && value === true) {
+            setProcessingScales(current => current.map(s => 
+              s.id === id ? { ...s, [field]: value } : { ...s, escalaDefault: false }
+            ))
+            return { ...scale, [field]: value }
+          }
           return { ...scale, [field]: value }
         }
-        return { ...scale, [field]: value }
+        return scale
+      })
+
+      // Validar la escala actualizada
+      const updatedScale = updated.find(s => s.id === id)
+      if (updatedScale) {
+        const errors = validateProcessingScale(updatedScale, updated)
+        setProcessingScaleErrors(prev => ({
+          ...prev,
+          [id]: errors
+        }))
       }
-      return scale
-    }))
+
+      return updated
+    })
   }
 
 
@@ -1261,36 +1318,64 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                       {processingScales.map((scale, index) => (
                                         <tr key={scale.id} className="hover:bg-gray-50">
                                           <td className="px-4 py-3 whitespace-nowrap">
-                                            <Input
-                                              value={scale.escala}
-                                              onChange={(e) => updateProcessingScale(scale.id, 'escala', e.target.value)}
-                                              placeholder="Ej: Escala 1"
-                                              className="w-full text-sm"
-                                            />
+                                            <div className="space-y-1">
+                                              <Input
+                                                value={scale.escala}
+                                                onChange={(e) => updateProcessingScale(scale.id, 'escala', e.target.value)}
+                                                placeholder="Ej: Escala 1"
+                                                className={`w-full text-sm ${processingScaleErrors[scale.id]?.escala ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                              />
+                                              {processingScaleErrors[scale.id]?.escala && (
+                                                <p className="text-xs text-red-600">{processingScaleErrors[scale.id].escala}</p>
+                                              )}
+                                            </div>
                                           </td>
                                           <td className="px-4 py-3 whitespace-nowrap">
-                                            <Input
-                                              value={scale.tpvMinimo}
-                                              onChange={(e) => updateProcessingScale(scale.id, 'tpvMinimo', e.target.value)}
-                                              placeholder="Ej: 0"
-                                              className="w-full text-sm"
-                                            />
+                                            <div className="space-y-1">
+                                              <Input
+                                                value={scale.tpvMinimo}
+                                                onChange={(e) => updateProcessingScale(scale.id, 'tpvMinimo', e.target.value)}
+                                                placeholder="Ej: 0"
+                                                type="number"
+                                                min="0"
+                                                className={`w-full text-sm ${processingScaleErrors[scale.id]?.tpvMinimo ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                              />
+                                              {processingScaleErrors[scale.id]?.tpvMinimo && (
+                                                <p className="text-xs text-red-600">{processingScaleErrors[scale.id].tpvMinimo}</p>
+                                              )}
+                                            </div>
                                           </td>
                                           <td className="px-4 py-3 whitespace-nowrap">
-                                            <Input
-                                              value={scale.tpvMaximo}
-                                              onChange={(e) => updateProcessingScale(scale.id, 'tpvMaximo', e.target.value)}
-                                              placeholder="Ej: 10000"
-                                              className="w-full text-sm"
-                                            />
+                                            <div className="space-y-1">
+                                              <Input
+                                                value={scale.tpvMaximo}
+                                                onChange={(e) => updateProcessingScale(scale.id, 'tpvMaximo', e.target.value)}
+                                                placeholder="Ej: 10000"
+                                                type="number"
+                                                min="0"
+                                                className={`w-full text-sm ${processingScaleErrors[scale.id]?.tpvMaximo ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                              />
+                                              {processingScaleErrors[scale.id]?.tpvMaximo && (
+                                                <p className="text-xs text-red-600">{processingScaleErrors[scale.id].tpvMaximo}</p>
+                                              )}
+                                            </div>
                                           </td>
                                           <td className="px-4 py-3 whitespace-nowrap">
-                                            <Input
-                                              value={scale.tasasAplicadas}
-                                              onChange={(e) => updateProcessingScale(scale.id, 'tasasAplicadas', e.target.value)}
-                                              placeholder="Ej: 2.5"
-                                              className="w-full text-sm"
-                                            />
+                                            <div className="space-y-1">
+                                              <Input
+                                                value={scale.tasasAplicadas}
+                                                onChange={(e) => updateProcessingScale(scale.id, 'tasasAplicadas', e.target.value)}
+                                                placeholder="Ej: 2.5"
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                step="0.01"
+                                                className={`w-full text-sm ${processingScaleErrors[scale.id]?.tasasAplicadas ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                              />
+                                              {processingScaleErrors[scale.id]?.tasasAplicadas && (
+                                                <p className="text-xs text-red-600">{processingScaleErrors[scale.id].tasasAplicadas}</p>
+                                              )}
+                                            </div>
                                           </td>
                                           <td className="px-4 py-3 whitespace-nowrap text-center">
                                             <input
@@ -1316,15 +1401,27 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                 </div>
                               </div>
 
-                              {/* Botón para agregar nueva escala */}
-                              <div className="flex justify-start">
-                                <button
-                                  onClick={addProcessingScale}
-                                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                                >
-                                  <Plus className="w-4 h-4 mr-2" />
-                                  Agregar Escala
-                                </button>
+                              {/* Validación global y botón para agregar nueva escala */}
+                              <div className="space-y-4">
+                                {/* Validación de escala default */}
+                                {processingScales.length > 0 && !processingScales.some(s => s.escalaDefault) && (
+                                  <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                    <p className="text-sm text-amber-700">
+                                      Debe marcar al menos una escala como default
+                                    </p>
+                                  </div>
+                                )}
+
+                                <div className="flex justify-start">
+                                  <button
+                                    onClick={addProcessingScale}
+                                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                                  >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Agregar Escala
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           )}
