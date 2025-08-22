@@ -1,0 +1,250 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Importar fuentes de MercadoPago */
+@import url('https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* Colores principales de MercadoPago */
+    --mp-blue: #009EE3;
+    --mp-light-blue: #00A8F5;
+    --mp-dark-blue: #003DA6;
+    --mp-yellow: #FFC107;
+    --mp-green: #00A650;
+    --mp-red: #CE0E2D;
+    --mp-black: #000000;
+    --mp-dark-gray: #666666;
+    --mp-light-gray: #999999;
+    
+    /* Variables CSS para colores del tema */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 201 100% 45%; /* MercadoPago Blue */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 201 100% 45%; /* MercadoPago Blue */
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 201 100% 45%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 201 100% 45%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Proxima Nova', 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  /* Tipografía personalizada de MercadoPago */
+  .mp-heading {
+    font-family: 'Proxima Nova', 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+
+  .mp-body {
+    font-family: 'Proxima Nova', 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .mp-small {
+    font-family: 'Proxima Nova', 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 400;
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+}
+
+@layer components {
+  /* Estilos de componentes MercadoPago */
+  .mp-btn-primary {
+    @apply bg-[#009EE3] hover:bg-[#0088CC] text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#009EE3] focus:ring-offset-2;
+  }
+
+  .mp-btn-secondary {
+    @apply bg-white hover:bg-gray-50 text-[#009EE3] font-semibold py-2 px-4 rounded-lg border border-[#009EE3] hover:border-[#0088CC] transition-colors duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#009EE3] focus:ring-offset-2;
+  }
+
+  .mp-btn-success {
+    @apply bg-[#00A650] hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#00A650] focus:ring-offset-2;
+  }
+
+  .mp-btn-warning {
+    @apply bg-[#FFC107] hover:bg-yellow-600 text-gray-900 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#FFC107] focus:ring-offset-2;
+  }
+
+  .mp-btn-error {
+    @apply bg-[#CE0E2D] hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#CE0E2D] focus:ring-offset-2;
+  }
+
+  .mp-card {
+    @apply bg-white rounded-lg shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-200;
+  }
+
+  .mp-input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#009EE3] focus:border-transparent transition-colors duration-200;
+  }
+
+  .mp-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800;
+  }
+
+  .mp-alert {
+    @apply p-4 rounded-lg border-l-4 border-[#009EE3] bg-blue-50 text-blue-700;
+  }
+
+  .mp-alert-success {
+    @apply p-4 rounded-lg border-l-4 border-[#00A650] bg-green-50 text-green-700;
+  }
+
+  .mp-alert-warning {
+    @apply p-4 rounded-lg border-l-4 border-[#FFC107] bg-yellow-50 text-yellow-700;
+  }
+
+  .mp-alert-error {
+    @apply p-4 rounded-lg border-l-4 border-[#CE0E2D] bg-red-50 text-red-700;
+  }
+
+  /* Gradientes de MercadoPago */
+  .mp-gradient-blue {
+    background: linear-gradient(135deg, #009EE3 0%, #00A8F5 100%);
+  }
+
+  .mp-gradient-yellow {
+    background: linear-gradient(135deg, #FFC107 0%, #FFD54F 100%);
+  }
+
+  .mp-gradient-green {
+    background: linear-gradient(135deg, #00A650 0%, #4CAF50 100%);
+  }
+
+  /* Animaciones personalizadas */
+  .mp-pulse {
+    animation: mp-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes mp-pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: .5;
+    }
+  }
+
+  .mp-bounce {
+    animation: mp-bounce 1s infinite;
+  }
+
+  @keyframes mp-bounce {
+    0%, 100% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: translateY(0);
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+}
+
+@layer utilities {
+  /* Utilidades de colores MercadoPago */
+  .text-mp-blue {
+    color: #009EE3;
+  }
+
+  .text-mp-yellow {
+    color: #FFC107;
+  }
+
+  .text-mp-green {
+    color: #00A650;
+  }
+
+  .text-mp-red {
+    color: #CE0E2D;
+  }
+
+  .bg-mp-blue {
+    background-color: #009EE3;
+  }
+
+  .bg-mp-yellow {
+    background-color: #FFC107;
+  }
+
+  .bg-mp-green {
+    background-color: #00A650;
+  }
+
+  .bg-mp-red {
+    background-color: #CE0E2D;
+  }
+
+  .border-mp-blue {
+    border-color: #009EE3;
+  }
+
+  .border-mp-yellow {
+    border-color: #FFC107;
+  }
+
+  .border-mp-green {
+    border-color: #00A650;
+  }
+
+  .border-mp-red {
+    border-color: #CE0E2D;
+  }
+
+  /* Sombras personalizadas */
+  .shadow-mp {
+    box-shadow: 0 4px 6px -1px rgba(0, 158, 227, 0.1), 0 2px 4px -1px rgba(0, 158, 227, 0.06);
+  }
+
+  .shadow-mp-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 158, 227, 0.1), 0 4px 6px -2px rgba(0, 158, 227, 0.05);
+  }
+}
