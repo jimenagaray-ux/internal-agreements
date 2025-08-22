@@ -1580,21 +1580,19 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                           </td>
                                           <td className="px-4 py-3 whitespace-nowrap">
                                             <button
-                                              onClick={() => openRatesMatrix(scale.id, scale.escala || `Escala ${index + 1}`)}
-                                              className={`w-full text-left px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 border rounded-md ${
-                                                getRatesSummary(scale.id).includes('(con errores)')
-                                                  ? 'text-red-600 hover:text-red-800 hover:bg-red-50 border-red-300 hover:border-red-400 focus:ring-red-500'
-                                                  : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50 border-gray-300 hover:border-blue-300 focus:ring-blue-500'
-                                              }`}
+                                              onClick={() => {
+                                                console.log('Opening modal for scale:', scale.id)
+                                                setRatesMatrixPopup({
+                                                  isOpen: true,
+                                                  scaleId: scale.id,
+                                                  scaleName: scale.escala || `Escala ${index + 1}`
+                                                })
+                                              }}
+                                              className="w-full text-left px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 border rounded-md text-blue-600 hover:text-blue-800 hover:bg-blue-50 border-gray-300 hover:border-blue-300 focus:ring-blue-500"
                                             >
                                               <div className="flex items-center justify-between">
-                                                <span>{getRatesSummary(scale.id)}</span>
-                                                <div className="flex items-center gap-1">
-                                                  {getRatesSummary(scale.id).includes('(con errores)') && (
-                                                    <AlertTriangle className="w-4 h-4 text-red-500" />
-                                                  )}
-                                                  <Edit className="w-4 h-4 text-gray-400" />
-                                                </div>
+                                                <span>Configurar tasas</span>
+                                                <Edit className="w-4 h-4 text-gray-400" />
                                               </div>
                                             </button>
                                           </td>
@@ -1821,6 +1819,8 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                               )}
                             </DialogContent>
                           </Dialog>
+
+
 
                           {activePointSubtab === "financing" && (
                             <div className="space-y-4">
