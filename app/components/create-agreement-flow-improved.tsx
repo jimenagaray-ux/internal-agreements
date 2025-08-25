@@ -2132,8 +2132,6 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="meses">Meses</SelectItem>
-                            <SelectItem value="días">Días</SelectItem>
-                            <SelectItem value="años">Años</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
