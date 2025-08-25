@@ -823,29 +823,39 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
 
   // Función de validación para tasas en matriz
   const validateMatrixRate = (rate: string) => {
-    if (!rate.trim()) {
-      return "" // Permitir campos vacíos
-    }
-    
-    // Permitir "No aplica" como valor válido
-    if (rate.trim().toLowerCase() === 'no aplica') {
+    try {
+      // Validar que rate sea string
+      if (typeof rate !== 'string') {
+        return "Valor inválido"
+      }
+
+      if (!rate.trim()) {
+        return "" // Permitir campos vacíos
+      }
+      
+      // Permitir "No aplica" como valor válido
+      if (rate.trim().toLowerCase() === 'no aplica') {
+        return ""
+      }
+      
+      const numRate = Number(rate)
+      if (isNaN(numRate)) {
+        return "Debe ser un número válido o 'No aplica'"
+      }
+      
+      if (numRate < 0) {
+        return "No puede ser negativo"
+      }
+      
+      if (numRate > 100) {
+        return "No puede ser mayor a 100%"
+      }
+      
       return ""
+    } catch (error) {
+      console.error('Error in validateMatrixRate:', error)
+      return "Error de validación"
     }
-    
-    const numRate = Number(rate)
-    if (isNaN(numRate)) {
-      return "Debe ser un número válido o 'No aplica'"
-    }
-    
-    if (numRate < 0) {
-      return "No puede ser negativo"
-    }
-    
-    if (numRate > 100) {
-      return "No puede ser mayor a 100%"
-    }
-    
-    return ""
   }
 
   const updateRateInMatrix = (scaleId: string, paymentMethod: string, liberationDay: string, rate: string) => {
@@ -856,40 +866,81 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
         return
       }
 
+      // Validar que rate sea string
+      if (typeof rate !== 'string') {
+        console.error('Rate must be a string:', rate)
+        return
+      }
+
       // Actualizar la tasa
       setRatesMatrix(prev => {
-        const currentScale = prev[scaleId] || {}
-        const currentPaymentMethod = currentScale[paymentMethod] || {}
-        
-        return {
-          ...prev,
-          [scaleId]: {
-            ...currentScale,
-            [paymentMethod]: {
-              ...currentPaymentMethod,
-              [liberationDay]: rate
+        try {
+          const currentScale = prev[scaleId] || {}
+          const currentPaymentMethod = currentScale[paymentMethod] || {}
+          
+          return {
+            ...prev,
+            [scaleId]: {
+              ...currentScale,
+              [paymentMethod]: {
+                ...currentPaymentMethod,
+                [liberationDay]: rate
+              }
             }
           }
+        } catch (error) {
+          console.error('Error updating ratesMatrix state:', error)
+          return prev
         }
       })
 
       // Validar la tasa
-      const error = validateMatrixRate(rate)
-      setMatrixErrors(prev => {
-        const currentScale = prev[scaleId] || {}
-        const currentPaymentMethod = currentScale[paymentMethod] || {}
-        
-        return {
-          ...prev,
-          [scaleId]: {
-            ...currentScale,
-            [paymentMethod]: {
-              ...currentPaymentMethod,
-              [liberationDay]: error
+      try {
+        const error = validateMatrixRate(rate)
+        setMatrixErrors(prev => {
+          try {
+            const currentScale = prev[scaleId] || {}
+            const currentPaymentMethod = currentScale[paymentMethod] || {}
+            
+            return {
+              ...prev,
+              [scaleId]: {
+                ...currentScale,
+                [paymentMethod]: {
+                  ...currentPaymentMethod,
+                  [liberationDay]: error
+                }
+              }
             }
+          } catch (error) {
+            console.error('Error updating matrixErrors state:', error)
+            return prev
           }
-        }
-      })
+        })
+      } catch (validationError) {
+        console.error('Error validating rate:', validationError)
+        // Set a generic error if validation fails
+        setMatrixErrors(prev => {
+          try {
+            const currentScale = prev[scaleId] || {}
+            const currentPaymentMethod = currentScale[paymentMethod] || {}
+            
+            return {
+              ...prev,
+              [scaleId]: {
+                ...currentScale,
+                [paymentMethod]: {
+                  ...currentPaymentMethod,
+                  [liberationDay]: "Error de validación"
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error setting validation error:', error)
+            return prev
+          }
+        })
+      }
     } catch (error) {
       console.error('Error updating rate in matrix:', error)
     }
@@ -1880,7 +1931,8 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                                         value={currentValue}
                                                         onChange={(e) => {
                                                           try {
-                                                            updateRateInMatrix(scaleId, pm.id, day.id, e.target.value)
+                                                            const value = e.target.value || ''
+                                                            updateRateInMatrix(scaleId, pm.id, day.id, value)
                                                           } catch (error) {
                                                             console.error('Error updating rate:', error)
                                                           }
