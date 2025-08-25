@@ -651,20 +651,40 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
 
       // Luego inicializar datos en el próximo tick
       setTimeout(() => {
-        // Inicializar matriz si no existe
-        setRatesMatrix(prev => {
-          if (!prev[scaleId]) {
-            const initialMatrix: {[paymentMethod: string]: {[liberationDays: string]: string}} = {}
-            paymentMethods.forEach(pm => {
-              initialMatrix[pm.id] = {}
-              liberationDays.forEach(ld => {
-                initialMatrix[pm.id][ld.id] = ''
-              })
-            })
-            return { ...prev, [scaleId]: initialMatrix }
-          }
-          return prev
-        })
+                 // Inicializar matriz si no existe
+         setRatesMatrix(prev => {
+           if (!prev[scaleId]) {
+             const initialMatrix: {[paymentMethod: string]: {[liberationDays: string]: string}} = {}
+             paymentMethods.forEach(pm => {
+               initialMatrix[pm.id] = {}
+               liberationDays.forEach(ld => {
+                 // Configurar valores por defecto según las reglas especificadas
+                 let defaultValue = ''
+                 
+                 // Tarjeta de débito: "No aplica" en 3, 10 y 15 días
+                 if (pm.id === 'debit_card' && ['3_days', '10_days', '15_days'].includes(ld.id)) {
+                   defaultValue = 'No aplica'
+                 }
+                 // Tarjeta de crédito: "No aplica" en 2 y 3 días
+                 else if (pm.id === 'credit_card' && ['2_days', '3_days'].includes(ld.id)) {
+                   defaultValue = 'No aplica'
+                 }
+                 // Tarjeta prepaga: "No aplica" en 2, 10 y 15 días
+                 else if (pm.id === 'prepaid_card' && ['2_days', '10_days', '15_days'].includes(ld.id)) {
+                   defaultValue = 'No aplica'
+                 }
+                 // PIX: "No aplica" en todas menos al instante
+                 else if (pm.id === 'pix' && ld.id !== 'instant') {
+                   defaultValue = 'No aplica'
+                 }
+                 
+                 initialMatrix[pm.id][ld.id] = defaultValue
+               })
+             })
+             return { ...prev, [scaleId]: initialMatrix }
+           }
+           return prev
+         })
 
         // Inicializar errores si no existen
         setMatrixErrors(prev => {
@@ -707,9 +727,14 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
       return "" // Permitir campos vacíos
     }
     
+    // Permitir "No aplica" como valor válido
+    if (rate.trim().toLowerCase() === 'no aplica') {
+      return ""
+    }
+    
     const numRate = Number(rate)
     if (isNaN(numRate)) {
-      return "Debe ser un número válido"
+      return "Debe ser un número válido o 'No aplica'"
     }
     
     if (numRate < 0) {
@@ -1709,11 +1734,8 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                                             console.error('Error updating rate:', error)
                                                           }
                                                         }}
-                                                        placeholder="0.00"
-                                                        type="number"
-                                                        min="0"
-                                                        max="100"
-                                                        step="0.01"
+                                                                                                                 placeholder="Ej: 2.5 o 'No aplica'"
+                                                        type="text"
                                                         className={`w-full text-sm text-center ${error ? 'border-red-500 focus:ring-red-500' : ''}`}
                                                       />
                                                       {error && (
@@ -1730,12 +1752,17 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                     </table>
                                   </div>
 
-                                  <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <Info className="w-4 h-4 text-blue-600" />
-                                    <p className="text-sm text-blue-700">
-                                      Ingrese las tasas en porcentaje (%). Ejemplo: 2.5 para 2.5%
-                                    </p>
-                                  </div>
+                                                                     <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                     <Info className="w-4 h-4 text-blue-600" />
+                                     <div className="text-sm text-blue-700">
+                                       <p className="mb-2">
+                                         <strong>Instrucciones:</strong> Ingrese las tasas en porcentaje (%) o "No aplica" para combinaciones no disponibles.
+                                       </p>
+                                       <p className="text-xs">
+                                         <strong>Valores por defecto configurados:</strong> Algunas combinaciones ya tienen "No aplica" según las reglas de negocio.
+                                       </p>
+                                     </div>
+                                   </div>
                                 </div>
 
                                 <DialogFooter className="flex flex-col gap-3">
