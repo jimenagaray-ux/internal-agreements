@@ -158,6 +158,18 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
   // Estado para errores de validación de escalas
   const [processingScaleErrors, setProcessingScaleErrors] = useState<{[key: string]: {[field: string]: string}}>({})
 
+  // Estado para matriz de financing (cuotas y fees)
+  const [financingRates, setFinancingRates] = useState([
+    {
+      id: crypto.randomUUID(),
+      cuotas: "",
+      feeFinancing: ""
+    }
+  ])
+
+  // Estado para errores de validación de financing
+  const [financingRateErrors, setFinancingRateErrors] = useState<{[key: string]: {[field: string]: string}}>({})
+
   // Estado para matriz de tasas popup
   const [ratesMatrixPopup, setRatesMatrixPopup] = useState<{
     isOpen: boolean
@@ -622,6 +634,71 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
       if (updatedScale) {
         const errors = validateProcessingScale(updatedScale, updated)
         setProcessingScaleErrors(prev => ({
+          ...prev,
+          [id]: errors
+        }))
+      }
+
+      return updated
+    })
+  }
+
+  // Funciones para manejar matriz de financing
+  const addFinancingRate = () => {
+    setFinancingRates(prev => [...prev, {
+      id: crypto.randomUUID(),
+      cuotas: "",
+      feeFinancing: ""
+    }])
+  }
+
+  const removeFinancingRate = (id: string) => {
+    setFinancingRates(prev => prev.filter(rate => rate.id !== id))
+  }
+
+  // Función de validación para financing rates
+  const validateFinancingRate = (rate: any, allRates: any[]) => {
+    const errors: {[field: string]: string} = {}
+
+    // Validar cuotas (puede ser número o rango como "2-6")
+    if (!rate.cuotas.trim()) {
+      errors.cuotas = "Las cuotas son requeridas"
+    } else {
+      const cuotasValue = rate.cuotas.trim()
+      // Verificar si es un número o un rango válido (ej: "1", "2-6", "7-12")
+      const rangePattern = /^\d+(-\d+)?$/
+      if (!rangePattern.test(cuotasValue)) {
+        errors.cuotas = "Formato inválido. Use: '1', '2-6', etc."
+      } else {
+        // Verificar duplicados
+        const duplicates = allRates.filter(r => r.id !== rate.id && r.cuotas.trim().toLowerCase() === cuotasValue.toLowerCase())
+        if (duplicates.length > 0) {
+          errors.cuotas = "Ya existe esta configuración de cuotas"
+        }
+      }
+    }
+
+    // Validar fee de financing
+    if (!rate.feeFinancing.trim()) {
+      errors.feeFinancing = "El fee de financing es requerido"
+    } else if (isNaN(Number(rate.feeFinancing)) || Number(rate.feeFinancing) < 0 || Number(rate.feeFinancing) > 100) {
+      errors.feeFinancing = "Debe ser un número entre 0 y 100"
+    }
+
+    return errors
+  }
+
+  const updateFinancingRate = (id: string, field: string, value: string) => {
+    setFinancingRates(prev => {
+      const updated = prev.map(rate => 
+        rate.id === id ? { ...rate, [field]: value } : rate
+      )
+
+      // Validar la tasa actualizada
+      const updatedRate = updated.find(r => r.id === id)
+      if (updatedRate) {
+        const errors = validateFinancingRate(updatedRate, updated)
+        setFinancingRateErrors(prev => ({
           ...prev,
           [id]: errors
         }))
@@ -1850,34 +1927,104 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
 
 
                           {activePointSubtab === "financing" && (
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                               <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
                                 <h4 className="font-medium text-gray-900">Configuración de Tasas de Financing</h4>
                               </div>
                               <p className="text-sm text-gray-600">
-                                Define las tasas de financiamiento para ofertas de cuotas Point.
+                                Configure los fees de financing por número de cuota o rango de cuotas para ofertas de financiamiento Point.
                               </p>
-                              <div className="space-y-3">
-                                <div>
-                                  <Label className="text-sm text-gray-700">Tasa de financing (%)</Label>
-                                  <Input
-                                    value={paymentMethodConfig.point.financing.tasas}
-                                    onChange={(e) => {
-                                      setPaymentMethodConfig(prev => ({
-                                        ...prev,
-                                        point: {
-                                          ...prev.point,
-                                          financing: {
-                                            ...prev.point.financing,
-                                            tasas: e.target.value
-                                          }
-                                        }
-                                      }))
-                                    }}
-                                    placeholder="Ej: 1.8"
-                                    className="mt-1"
-                                  />
+
+                              {/* Tabla de tasas de financing */}
+                              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                <div className="overflow-x-auto">
+                                  <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                      <tr>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                          Cuotas
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                          Fee Financing (%)
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                          Acciones
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                      {financingRates.map((rate, index) => (
+                                        <tr key={rate.id} className="hover:bg-gray-50">
+                                          <td className="px-4 py-3 whitespace-nowrap">
+                                            <div className="space-y-1">
+                                              <Input
+                                                value={rate.cuotas}
+                                                onChange={(e) => updateFinancingRate(rate.id, 'cuotas', e.target.value)}
+                                                placeholder="Ej: 1, 2-6, 7-12"
+                                                className={`w-full text-sm ${financingRateErrors[rate.id]?.cuotas ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                              />
+                                              {financingRateErrors[rate.id]?.cuotas && (
+                                                <p className="text-xs text-red-600">{financingRateErrors[rate.id].cuotas}</p>
+                                              )}
+                                            </div>
+                                          </td>
+                                          <td className="px-4 py-3 whitespace-nowrap">
+                                            <div className="space-y-1">
+                                              <Input
+                                                value={rate.feeFinancing}
+                                                onChange={(e) => updateFinancingRate(rate.id, 'feeFinancing', e.target.value)}
+                                                placeholder="Ej: 2.5"
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                step="0.1"
+                                                className={`w-full text-sm ${financingRateErrors[rate.id]?.feeFinancing ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                              />
+                                              {financingRateErrors[rate.id]?.feeFinancing && (
+                                                <p className="text-xs text-red-600">{financingRateErrors[rate.id].feeFinancing}</p>
+                                              )}
+                                            </div>
+                                          </td>
+                                          <td className="px-4 py-3 whitespace-nowrap">
+                                            <button
+                                              onClick={() => removeFinancingRate(rate.id)}
+                                              disabled={financingRates.length <= 1}
+                                              className="text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed text-sm"
+                                            >
+                                              Eliminar
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+
+                              {/* Botón para agregar nueva fila */}
+                              <div className="flex justify-start">
+                                <button
+                                  onClick={addFinancingRate}
+                                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Agregar Configuración de Cuotas
+                                </button>
+                              </div>
+
+                              {/* Información adicional */}
+                              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                                <div className="flex items-start gap-3">
+                                  <Info className="w-5 h-5 text-green-600 mt-0.5" />
+                                  <div>
+                                    <h5 className="font-medium text-green-900 mb-1">Configuración de Cuotas</h5>
+                                    <ul className="text-sm text-green-800 space-y-1">
+                                      <li><strong>Cuota individual:</strong> Use un número (ej: "1", "3", "6")</li>
+                                      <li><strong>Rango de cuotas:</strong> Use formato "inicio-fin" (ej: "2-6", "7-12")</li>
+                                      <li><strong>Fee Financing:</strong> Porcentaje de fee aplicado a esas cuotas</li>
+                                    </ul>
+                                  </div>
                                 </div>
                               </div>
                             </div>
