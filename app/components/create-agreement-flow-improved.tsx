@@ -2096,30 +2096,7 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                     </div>
                     )}
 
-                    {/* Información adicional específica del método de pago */}
-                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <Info className="w-5 h-5 text-blue-500 mt-0.5" />
-                        <div>
-                          <h5 className="font-medium text-gray-900 mb-1">
-                            Información sobre {
-                              activePaymentTab === "point" ? "Point" :
-                              activePaymentTab === "codigoQR" ? "Código QR" :
-                              activePaymentTab === "checkout" ? "Checkout" :
-                              activePaymentTab === "linkDePago" ? "Link de pago" :
-                              "Point Tap"
-                            }
-                          </h5>
-                          <p className="text-sm text-gray-600">
-                            {activePaymentTab === "point" && "Configura los costos para transacciones realizadas con Point físico."}
-                            {activePaymentTab === "codigoQR" && "Configura los costos para pagos mediante código QR."}
-                            {activePaymentTab === "checkout" && "Configura los costos para pagos online mediante Checkout."}
-                            {activePaymentTab === "linkDePago" && "Configura los costos para pagos mediante links de pago."}
-                            {activePaymentTab === "pointTap" && "Configura los costos para pagos contactless con Point Tap."}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                    
                   </div>
                 </div>
               </MPCard>
