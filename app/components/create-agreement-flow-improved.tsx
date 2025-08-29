@@ -301,13 +301,13 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
   ]
 
   const countries = [
-    { id: "AR", label: "Argentina" },
-    { id: "BR", label: "Brasil" },
-    { id: "CL", label: "Chile" },
-    { id: "CO", label: "Colombia" },
-    { id: "MX", label: "México" },
-    { id: "PE", label: "Perú" },
-    { id: "UY", label: "Uruguay" },
+    { id: "AR", label: "Argentina", flag: "🇦🇷" },
+    { id: "BR", label: "Brasil", flag: "🇧🇷" },
+    { id: "CL", label: "Chile", flag: "🇨🇱" },
+    { id: "CO", label: "Colombia", flag: "🇨🇴" },
+    { id: "MX", label: "México", flag: "🇲🇽" },
+    { id: "PE", label: "Perú", flag: "🇵🇪" },
+    { id: "UY", label: "Uruguay", flag: "🇺🇾" },
   ]
 
   const teams = [
@@ -1175,12 +1175,25 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                       onValueChange={(value) => setFormData({ ...formData, site: value })}
                     >
                       <SelectTrigger className={shouldShowError("site") && validationErrors.site ? "border-red-500" : ""}>
-                        <SelectValue placeholder="Selecciona el site" />
+                        <SelectValue placeholder="Selecciona el site">
+                          {formData.site && (() => {
+                            const selectedCountry = countries.find(c => c.id === formData.site);
+                            return selectedCountry ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{selectedCountry.flag}</span>
+                                <span>{selectedCountry.label}</span>
+                              </div>
+                            ) : null;
+                          })()}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {countries.map((country) => (
                           <SelectItem key={country.id} value={country.id}>
-                            {country.label}
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{country.flag}</span>
+                              <span>{country.label}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
