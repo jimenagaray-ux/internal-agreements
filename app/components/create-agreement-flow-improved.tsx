@@ -67,7 +67,7 @@ interface FormData {
   expectedTPV: string
   startDate: string
   endDate: string
-  targetAudience: string
+  businessUnitPricing: string
   expectedResults: string
   
   // Audiencia (paso 2)
@@ -90,9 +90,9 @@ interface FormData {
   tpvCurrency?: string
   
   // Precios (paso 4)
-  processingDiscount?: string
-  liberationDays?: string
-  financingImprovement?: string
+  processingDiscount: string
+  liberationDays: string
+  financingImprovement: string
   
   // Otros campos existentes
   commission: string
@@ -215,10 +215,23 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
     expectedTPV: "",
     startDate: "",
     endDate: "",
-    targetAudience: "",
+    businessUnitPricing: "",
     expectedResults: "",
     audienceType: "",
     audienceRules: [],
+    sellerFile: undefined,
+    selectedGroups: [],
+    minTPV: "",
+    maxTPV: "",
+    businessCategory: "",
+    region: "",
+    applicationConditions: "",
+    marketplace: "",
+    paymentMethods: [],
+    timeLimitDays: "",
+    tpnLimit: "",
+    tpvLimit: "",
+    tpvCurrency: "",
     processingDiscount: "",
     liberationDays: "",
     financingImprovement: "",
@@ -226,6 +239,8 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
     threshold: "",
     approved: false,
     pricingScales: [],
+    recalculationPeriod: "",
+    recalculationUnit: "meses",
     recalculationOptions: [],
   })
 
@@ -367,7 +382,7 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
         errors.endDate = "La fecha de fin debe ser posterior a la fecha de inicio"
       }
       
-      if (!formData.targetAudience.trim()) errors.targetAudience = "La audiencia objetivo es requerida"
+      if (!formData.businessUnitPricing.trim()) errors.businessUnitPricing = "La unidad de negocio donde aplicaremos pricing es requerida"
       
       // Para PxE este campo no es requerido
       if (formData.type !== "PxE") {
@@ -386,7 +401,7 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
 
   const isStepValid = (step: number) => {
     // Campos base para el paso 1 (endDate ya no es requerida)
-    let step1Fields = ['name', 'description', 'site', 'team', 'businessUnit', 'startDate', 'targetAudience']
+    let step1Fields = ['name', 'description', 'site', 'team', 'businessUnit', 'startDate', 'businessUnitPricing']
     
     // Agregar campos adicionales solo si NO es PxE
     if (formData.type !== "PxE") {
@@ -1352,21 +1367,117 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                   )}
 
                   <div>
-                    <Label htmlFor="targetAudience" className="text-sm font-medium">
-                      Audiencia objetivo *
+                    <Label htmlFor="businessUnitPricing" className="text-sm font-medium">
+                      Unidad de negocio donde aplicaremos pricing *
                     </Label>
                     <Textarea
-                      id="targetAudience"
-                      placeholder="Describe la audiencia objetivo"
-                      value={formData.targetAudience}
-                      onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
-                      onBlur={() => markFieldAsTouched("targetAudience")}
-                      className={shouldShowError("targetAudience") && validationErrors.targetAudience ? "border-red-500" : ""}
+                      id="businessUnitPricing"
+                      placeholder="Describe la unidad de negocio donde aplicaremos pricing"
+                      value={formData.businessUnitPricing}
+                      onChange={(e) => setFormData({ ...formData, businessUnitPricing: e.target.value })}
+                      onBlur={() => markFieldAsTouched("businessUnitPricing")}
+                      className={shouldShowError("businessUnitPricing") && validationErrors.businessUnitPricing ? "border-red-500" : ""}
                     />
-                    {shouldShowError("targetAudience") && validationErrors.targetAudience && (
-                      <p className="text-red-500 text-sm mt-1">{validationErrors.targetAudience}</p>
+                    {shouldShowError("businessUnitPricing") && validationErrors.businessUnitPricing && (
+                      <p className="text-red-500 text-sm mt-1">{validationErrors.businessUnitPricing}</p>
                     )}
                   </div>
+
+
+
+                  {/* Sección de Recálculo */}
+                  <MPCard className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">Configuración de Recálculo</h3>
+                    
+                    {/* Pregunta y configuración */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium mb-3 block">
+                          ¿Después de cuánto tiempo comienza el recálculo?
+                        </Label>
+                        <div className="flex gap-3 items-end">
+                          <div className="flex-1">
+                            <Input
+                              type="number"
+                              placeholder="3"
+                              value={formData.recalculationPeriod || ""}
+                              onChange={(e) => setFormData({ ...formData, recalculationPeriod: e.target.value })}
+                              className="text-center"
+                              min="1"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <Select
+                              value={formData.recalculationUnit || "meses"}
+                              onValueChange={(value) => setFormData({ ...formData, recalculationUnit: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Meses" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="meses">Meses</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <MPButton
+                            type="button"
+                            onClick={addRecalculationOption}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+                            disabled={!formData.recalculationPeriod || !formData.recalculationUnit}
+                          >
+                            Adicionar
+                          </MPButton>
+                        </div>
+                      </div>
+
+                      {/* Opciones de recálculo */}
+                      {formData.recalculationOptions.length > 0 && (
+                        <div className="mt-6">
+                          <h4 className="text-base font-semibold mb-3">Opciones de recálculo</h4>
+                          <div className="space-y-3">
+                            {formData.recalculationOptions.map((option, index) => (
+                              <div key={option.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                                <div className="flex items-center gap-4">
+                                  <span className="font-medium">
+                                    En {option.period} {option.unit === "meses" ? (option.period === "1" ? "Mes" : "Meses") : option.unit}:
+                                  </span>
+                                  <span className="text-gray-600 text-sm">
+                                    Ej: Hoy {option.startDate} - Siguiente recálculo {option.nextDate}
+                                  </span>
+                                  <Select
+                                    value={option.type}
+                                    onValueChange={(value) => {
+                                      const updatedOptions = formData.recalculationOptions.map(opt =>
+                                        opt.id === option.id ? { ...opt, type: value } : opt
+                                      )
+                                      setFormData({ ...formData, recalculationOptions: updatedOptions })
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-32">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="default">Default</SelectItem>
+                                      <SelectItem value="custom">Custom</SelectItem>
+                                      <SelectItem value="premium">Premium</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <MPButton
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteRecalculationOption(option.id)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </MPButton>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </MPCard>
 
                   {/* Campo que NO se muestra para PxE */}
                   {formData.type !== "PxE" && (
@@ -1700,26 +1811,26 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                     {/* Contenido específico para Point con subtabs */}
                     {activePaymentTab === "point" ? (
                       <div className="space-y-6">
-                        {/* Subtabs para Point */}
-                        <div className="border-b border-gray-200">
-                          <nav className="flex space-x-8" aria-label="Point Subtabs">
+                        {/* Segmentos de control para Point */}
+                        <div className="flex justify-start">
+                          <div className="inline-flex bg-gray-100 p-1 rounded-lg border border-gray-300">
                             {[
-                              { id: "processing", name: "Tasas de processing" },
-                              { id: "financing", name: "Tasas de financing" }
+                              { id: "processing", name: "PROCESAMIENTO" },
+                              { id: "financing", name: "FINANCIACIÓN" }
                             ].map((subtab) => (
                               <button
                                 key={subtab.id}
                                 onClick={() => setActivePointSubtab(subtab.id)}
                                 className={`${
                                   activePointSubtab === subtab.id
-                                    ? 'border-blue-500 text-blue-600 bg-blue-50'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors`}
+                                    ? 'bg-white text-gray-900 shadow-sm border border-gray-300'
+                                    : 'text-white bg-gray-600 hover:bg-gray-700'
+                                } px-4 py-2 rounded-md text-sm font-medium transition-all duration-100`}
                               >
                                 {subtab.name}
                               </button>
                             ))}
-                          </nav>
+                          </div>
                         </div>
 
                         {/* Contenido de los subtabs */}
@@ -2226,99 +2337,8 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                 </div>
               </MPCard>
 
-              {/* Sección de Recálculo */}
-              <MPCard className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Configuración de Recálculo</h3>
-                
-                {/* Pregunta y configuración */}
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium mb-3 block">
-                      ¿Después de cuánto tiempo comienza el recálculo?
-                    </Label>
-                    <div className="flex gap-3 items-end">
-                      <div className="flex-1">
-                        <Input
-                          type="number"
-                          placeholder="3"
-                          value={formData.recalculationPeriod || ""}
-                          onChange={(e) => setFormData({ ...formData, recalculationPeriod: e.target.value })}
-                          className="text-center"
-                          min="1"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <Select
-                          value={formData.recalculationUnit || "meses"}
-                          onValueChange={(value) => setFormData({ ...formData, recalculationUnit: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Meses" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="meses">Meses</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <MPButton
-                        type="button"
-                        onClick={addRecalculationOption}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
-                        disabled={!formData.recalculationPeriod || !formData.recalculationUnit}
-                      >
-                        Adicionar
-                      </MPButton>
-                    </div>
-                  </div>
 
-                  {/* Opciones de recálculo */}
-                  {formData.recalculationOptions.length > 0 && (
-                    <div className="mt-6">
-                      <h4 className="text-base font-semibold mb-3">Opciones de recálculo</h4>
-                      <div className="space-y-3">
-                        {formData.recalculationOptions.map((option, index) => (
-                          <div key={option.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-                            <div className="flex items-center gap-4">
-                              <span className="font-medium">
-                                En {option.period} {option.unit === "meses" ? (option.period === "1" ? "Mes" : "Meses") : option.unit}:
-                              </span>
-                              <span className="text-gray-600 text-sm">
-                                Ej: Hoy {option.startDate} - Siguiente recálculo {option.nextDate}
-                              </span>
-                              <Select
-                                value={option.type}
-                                onValueChange={(value) => {
-                                  const updatedOptions = formData.recalculationOptions.map(opt =>
-                                    opt.id === option.id ? { ...opt, type: value } : opt
-                                  )
-                                  setFormData({ ...formData, recalculationOptions: updatedOptions })
-                                }}
-                              >
-                                <SelectTrigger className="w-32">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="default">Default</SelectItem>
-                                  <SelectItem value="custom">Custom</SelectItem>
-                                  <SelectItem value="premium">Premium</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <MPButton
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => deleteRecalculationOption(option.id)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </MPButton>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </MPCard>
+
             </div>
           </div>
         )
@@ -2637,7 +2657,7 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                   <div className="mt-1 text-xs max-h-32 overflow-y-auto">
                     {(() => {
                       // Campos base para validar (endDate ya no es requerida)
-                      let fieldsToValidate = ['name', 'description', 'site', 'team', 'businessUnit', 'type', 'startDate', 'targetAudience']
+                      let fieldsToValidate = ['name', 'description', 'site', 'team', 'businessUnit', 'type', 'startDate', 'businessUnitPricing']
                       
                       // Agregar campos adicionales solo si NO es PxE
                       if (formData.type !== "PxE") {
