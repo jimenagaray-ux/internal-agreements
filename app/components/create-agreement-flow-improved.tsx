@@ -1878,8 +1878,8 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                                 onClick={() => setActivePointSubtab(subtab.id)}
                                 className={`${
                                   activePointSubtab === subtab.id
-                                    ? 'bg-white text-gray-900 shadow-sm border border-gray-300'
-                                    : 'text-white bg-gray-600 hover:bg-gray-700'
+                                    ? 'bg-blue-100 text-blue-900 border border-blue-300'
+                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                                 } px-4 py-2 rounded-md text-sm font-medium transition-all duration-100`}
                               >
                                 {subtab.name}
