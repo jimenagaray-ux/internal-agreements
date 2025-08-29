@@ -1075,24 +1075,6 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
             </div>
 
             <div className="space-y-6">
-              {/* Nota informativa para PxE */}
-              {formData.type === "PxE" && (
-                <MPCard className="p-4 bg-blue-50 border-blue-200">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
-                      <span className="text-white text-xs font-bold">i</span>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-blue-900 mb-1">Configuración para Pricing por Escalas</h4>
-                      <p className="text-sm text-blue-700">
-                        Para este modelo, algunos campos como presupuesto, TPV esperado y resultados esperados no son requeridos, 
-                        ya que el enfoque está en definir las escalas de pricing.
-                      </p>
-                    </div>
-                  </div>
-                </MPCard>
-              )}
-
               {/* Configuración */}
               <MPCard variant="outlined" className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Configuración</h3>
