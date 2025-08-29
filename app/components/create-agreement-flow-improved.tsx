@@ -67,7 +67,7 @@ interface FormData {
   expectedTPV: string
   startDate: string
   endDate: string
-  businessUnitPricing: string
+  businessUnitPricing: string[]
   expectedResults: string
   
   // Audiencia (paso 2)
@@ -187,6 +187,9 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
   // Estado para errores de validación de matriz de tasas
   const [matrixErrors, setMatrixErrors] = useState<{[scaleId: string]: {[paymentMethod: string]: {[liberationDays: string]: string}}}>({})
 
+  // Estado para controlar el dropdown de unidades de negocio para pricing
+  const [businessUnitPricingDropdownOpen, setBusinessUnitPricingDropdownOpen] = useState(false)
+
   // Definir medios de pago y días de liberación
   const paymentMethods = [
     { id: 'debit_card', name: 'Tarjeta de débito' },
@@ -215,7 +218,7 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
     expectedTPV: "",
     startDate: "",
     endDate: "",
-    businessUnitPricing: "",
+    businessUnitPricing: [],
     expectedResults: "",
     audienceType: "",
     audienceRules: [],
@@ -382,7 +385,7 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
         errors.endDate = "La fecha de fin debe ser posterior a la fecha de inicio"
       }
       
-      if (!formData.businessUnitPricing.trim()) errors.businessUnitPricing = "La unidad de negocio donde aplicaremos pricing es requerida"
+      if (!formData.businessUnitPricing || formData.businessUnitPricing.length === 0) errors.businessUnitPricing = "La unidad de negocio donde aplicaremos pricing es requerida"
       
       // Para PxE este campo no es requerido
       if (formData.type !== "PxE") {
@@ -1370,14 +1373,71 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                     <Label htmlFor="businessUnitPricing" className="text-sm font-medium">
                       Unidad de negocio donde aplicaremos pricing *
                     </Label>
-                    <Textarea
-                      id="businessUnitPricing"
-                      placeholder="Describe la unidad de negocio donde aplicaremos pricing"
-                      value={formData.businessUnitPricing}
-                      onChange={(e) => setFormData({ ...formData, businessUnitPricing: e.target.value })}
-                      onBlur={() => markFieldAsTouched("businessUnitPricing")}
-                      className={shouldShowError("businessUnitPricing") && validationErrors.businessUnitPricing ? "border-red-500" : ""}
-                    />
+                    <div className="relative">
+                      <Select
+                        value=""
+                        open={businessUnitPricingDropdownOpen}
+                        onOpenChange={setBusinessUnitPricingDropdownOpen}
+                        onValueChange={(value) => {
+                          if (value && !formData.businessUnitPricing.includes(value)) {
+                            setFormData({ 
+                              ...formData, 
+                              businessUnitPricing: [...formData.businessUnitPricing, value] 
+                            });
+                            // Mantener el dropdown abierto después de la selección
+                            setBusinessUnitPricingDropdownOpen(true);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className={shouldShowError("businessUnitPricing") && validationErrors.businessUnitPricing ? "border-red-500" : ""}>
+                          <SelectValue placeholder="Selecciona unidades de negocio para pricing" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {businessUnits.map((unit) => (
+                            <SelectItem 
+                              key={unit.id} 
+                              value={unit.id}
+                              disabled={formData.businessUnitPricing.includes(unit.id)}
+                            >
+                              {unit.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      {/* Mostrar selecciones actuales */}
+                      {formData.businessUnitPricing.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {formData.businessUnitPricing.map((unitId) => {
+                            const unit = businessUnits.find(u => u.id === unitId);
+                            return (
+                              <div
+                                key={unitId}
+                                className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md"
+                              >
+                                {unit?.label}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData({ 
+                                      ...formData, 
+                                      businessUnitPricing: formData.businessUnitPricing.filter(id => id !== unitId) 
+                                    });
+                                  }}
+                                  className="ml-1 text-blue-600 hover:text-blue-800"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      
+                      {formData.businessUnitPricing.length === 0 && (
+                        <p className="text-sm text-gray-500 italic mt-1">Selecciona al menos una unidad de negocio para pricing</p>
+                      )}
+                    </div>
                     {shouldShowError("businessUnitPricing") && validationErrors.businessUnitPricing && (
                       <p className="text-red-500 text-sm mt-1">{validationErrors.businessUnitPricing}</p>
                     )}
