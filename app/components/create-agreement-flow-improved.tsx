@@ -1071,7 +1071,7 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
           <div className="space-y-8">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold mb-2">Configuración</h2>
-              <p className="text-gray-600">Configura los detalles básicos de tu campaña de marketing.</p>
+              <p className="text-gray-600">Configurar los detalles básicos de tu estrategia de escalas</p>
             </div>
 
             <div className="space-y-6">
