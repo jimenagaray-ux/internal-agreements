@@ -101,9 +101,7 @@ interface FormData {
   pricingScales: PricingScale[]
   
   // Recálculo (paso 3 - PxE)
-  recalculationPeriod?: string
-  recalculationUnit?: string
-  recalculationOptions: any[]
+  recalculationMonths: number[]
 }
 
 interface ValidationErrors {
@@ -242,9 +240,7 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
     threshold: "",
     approved: false,
     pricingScales: [],
-    recalculationPeriod: "",
-    recalculationUnit: "meses",
-    recalculationOptions: [],
+    recalculationMonths: [],
   })
 
   const steps = [
@@ -328,28 +324,29 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
 
   const agreementTypes = [
     {
-      id: "ISCA",
-      title: "ISCA",
-      description: "Incentivos por volumen de transacciones",
-      features: ["Comisiones escalonadas", "Metas mensuales", "Bonificaciones"],
-    },
-    {
       id: "PxE",
       title: "Pricing por Escala",
       description: "Precios basados en volumen de negocio",
       features: ["Umbrales de TPV", "Descuentos progresivos", "Revisión trimestral"],
     },
     {
+      id: "always-on",
+      title: "Campañas",
+      description: "Campañas permanentes sin fecha de fin",
+      features: ["Sin vencimiento", "Activación automática", "Monitoreo continuo"],
+    },
+    {
       id: "audience",
-      title: "Audiencia Específica",
+      title: "Audiencias Específicas",
       description: "Precios personalizados para segmentos",
       features: ["Targeting avanzado", "Precios fijos", "Duración flexible"],
     },
     {
-      id: "always-on",
-      title: "Always-On",
-      description: "Campañas permanentes sin fecha de fin",
-      features: ["Sin vencimiento", "Activación automática", "Monitoreo continuo"],
+      id: "ISCA",
+      title: "ISCA",
+      description: "Incentivos por volumen de transacciones",
+      features: ["Comisiones escalonadas", "Metas mensuales", "Bonificaciones"],
+      disabled: true,
     },
   ]
 
@@ -538,40 +535,16 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
 
 
 
-  // Funciones para manejar las opciones de recálculo
-  const addRecalculationOption = () => {
-    if (!formData.recalculationPeriod || !formData.recalculationUnit) {
-      return // No agregar si no hay datos
-    }
-
-    const today = new Date()
-    const nextRecalculation = new Date(today)
+  // Función para manejar la selección de meses de recálculo
+  const toggleRecalculationMonth = (month: number) => {
+    const currentMonths = formData.recalculationMonths
+    const updatedMonths = currentMonths.includes(month)
+      ? currentMonths.filter(m => m !== month)
+      : [...currentMonths, month].sort((a, b) => a - b)
     
-    if (formData.recalculationUnit === "meses") {
-      nextRecalculation.setMonth(today.getMonth() + parseInt(formData.recalculationPeriod))
-    }
-
-    const newOption = {
-      id: `recalc-${Date.now()}`,
-      period: formData.recalculationPeriod,
-      unit: formData.recalculationUnit,
-      startDate: today.toLocaleDateString('es-ES'),
-      nextDate: nextRecalculation.toLocaleDateString('es-ES'),
-      type: "default"
-    }
-
     setFormData({
       ...formData,
-      recalculationOptions: [...formData.recalculationOptions, newOption],
-      recalculationPeriod: "",
-      recalculationUnit: "meses"
-    })
-  }
-
-  const deleteRecalculationOption = (optionId: string) => {
-    setFormData({
-      ...formData,
-      recalculationOptions: formData.recalculationOptions.filter(option => option.id !== optionId)
+      recalculationMonths: updatedMonths
     })
   }
 
@@ -1444,93 +1417,45 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                   <MPCard className="p-6">
                     <h3 className="text-lg font-semibold mb-4">Configuración de Recálculo</h3>
                     
-                    {/* Pregunta y configuración */}
                     <div className="space-y-4">
                       <div>
                         <Label className="text-sm font-medium mb-3 block">
-                          ¿Después de cuánto tiempo comienza el recálculo?
+                          ¿Después de cuántos meses comienza el recálculo?
                         </Label>
-                        <div className="flex gap-3 items-end">
-                          <div className="flex-1">
-                            <Input
-                              type="number"
-                              placeholder="3"
-                              value={formData.recalculationPeriod || ""}
-                              onChange={(e) => setFormData({ ...formData, recalculationPeriod: e.target.value })}
-                              className="text-center"
-                              min="1"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <Select
-                              value={formData.recalculationUnit || "meses"}
-                              onValueChange={(value) => setFormData({ ...formData, recalculationUnit: value })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Meses" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="meses">Meses</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <MPButton
-                            type="button"
-                            onClick={addRecalculationOption}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
-                            disabled={!formData.recalculationPeriod || !formData.recalculationUnit}
-                          >
-                            Adicionar
-                          </MPButton>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {[0, 1, 2, 3].map((month) => (
+                            <div key={month} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`recalc-month-${month}`}
+                                checked={formData.recalculationMonths.includes(month)}
+                                onCheckedChange={() => toggleRecalculationMonth(month)}
+                              />
+                              <Label htmlFor={`recalc-month-${month}`} className="text-sm font-medium">
+                                {month === 0 ? "0 meses" : month === 1 ? "1 mes" : `${month} meses`}
+                              </Label>
+                            </div>
+                          ))}
                         </div>
+                        
+                        {/* Mostrar selección actual */}
+                        {formData.recalculationMonths.length > 0 && (
+                          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <div className="text-sm font-medium text-blue-800 mb-1">Meses seleccionados para recálculo:</div>
+                            <div className="flex flex-wrap gap-2">
+                              {formData.recalculationMonths.map((month) => (
+                                <span key={month} className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md">
+                                  {month === 0 ? "0 meses" : month === 1 ? "1 mes" : `${month} meses`}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {formData.recalculationMonths.length === 0 && (
+                          <p className="text-sm text-gray-500 italic mt-2">Selecciona al menos una opción de recálculo</p>
+                        )}
                       </div>
-
-                      {/* Opciones de recálculo */}
-                      {formData.recalculationOptions.length > 0 && (
-                        <div className="mt-6">
-                          <h4 className="text-base font-semibold mb-3">Opciones de recálculo</h4>
-                          <div className="space-y-3">
-                            {formData.recalculationOptions.map((option, index) => (
-                              <div key={option.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-                                <div className="flex items-center gap-4">
-                                  <span className="font-medium">
-                                    En {option.period} {option.unit === "meses" ? (option.period === "1" ? "Mes" : "Meses") : option.unit}:
-                                  </span>
-                                  <span className="text-gray-600 text-sm">
-                                    Ej: Hoy {option.startDate} - Siguiente recálculo {option.nextDate}
-                                  </span>
-                                  <Select
-                                    value={option.type}
-                                    onValueChange={(value) => {
-                                      const updatedOptions = formData.recalculationOptions.map(opt =>
-                                        opt.id === option.id ? { ...opt, type: value } : opt
-                                      )
-                                      setFormData({ ...formData, recalculationOptions: updatedOptions })
-                                    }}
-                                  >
-                                    <SelectTrigger className="w-32">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="default">Default</SelectItem>
-                                      <SelectItem value="custom">Custom</SelectItem>
-                                      <SelectItem value="premium">Premium</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <MPButton
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteRecalculationOption(option.id)}
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </MPButton>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </MPCard>
 
