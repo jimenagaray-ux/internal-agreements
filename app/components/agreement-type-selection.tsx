@@ -10,7 +10,8 @@ import {
   Target, 
   Zap,
   TrendingUp,
-  Lock
+  Lock,
+  BarChart3
 } from "lucide-react"
 
 interface AgreementTypeSelectionProps {
@@ -20,50 +21,6 @@ interface AgreementTypeSelectionProps {
 
 export function AgreementTypeSelection({ onBack, onSelectType }: AgreementTypeSelectionProps) {
   const agreementTypes = [
-    {
-      id: "PxE",
-      title: "Pricing por Escala",
-      description: "Precios basados en volumen de negocio",
-      features: ["Umbrales de TPV", "Descuentos progresivos", "Revisión trimestral"],
-      icon: Target,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      borderColor: "border-green-200",
-      available: true
-    },
-    {
-      id: "always-on",
-      title: "Campañas",
-      description: "Campañas permanentes sin fecha de fin",
-      features: ["Sin vencimiento", "Activación automática", "Monitoreo continuo"],
-      icon: Zap,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-      borderColor: "border-orange-200",
-      available: true
-    },
-    {
-      id: "audience",
-      title: "Audiencias Específicas",
-      description: "Precios personalizados para segmentos",
-      features: ["Targeting avanzado", "Precios fijos", "Duración flexible"],
-      icon: Users,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-      borderColor: "border-purple-200",
-      available: true
-    },
-    {
-      id: "ISCA",
-      title: "ISCA",
-      description: "Incentivos por volumen de transacciones",
-      features: ["Comisiones escalonadas", "Metas mensuales", "Bonificaciones"],
-      icon: DollarSign,
-      color: "text-gray-400",
-      bgColor: "bg-gray-100",
-      borderColor: "border-gray-300",
-      available: false
-    },
     {
       id: "estrategia-precios",
       title: "Estrategia de Precios",
@@ -85,6 +42,50 @@ export function AgreementTypeSelection({ onBack, onSelectType }: AgreementTypeSe
       bgColor: "bg-indigo-50",
       borderColor: "border-indigo-200",
       available: true
+    },
+    {
+      id: "always-on",
+      title: "Campañas",
+      description: "Campañas permanentes sin fecha de fin",
+      features: ["Sin vencimiento", "Activación automática", "Monitoreo continuo"],
+      icon: Zap,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
+      available: true
+    },
+    {
+      id: "PxE",
+      title: "Pricing por Escala",
+      description: "Precios basados en volumen de negocio",
+      features: ["Umbrales de TPV", "Descuentos progresivos", "Revisión trimestral"],
+      icon: Target,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+      available: true
+    },
+    {
+      id: "tasas-longtail",
+      title: "Tasas Longtail",
+      description: "Tasas especializadas para nichos de mercado",
+      features: ["Mercados específicos", "Tasas diferenciadas", "Segmentación avanzada"],
+      icon: BarChart3,
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
+      borderColor: "border-teal-200",
+      available: true
+    },
+    {
+      id: "ISCA",
+      title: "ISCA",
+      description: "Incentivos por volumen de transacciones",
+      features: ["Comisiones escalonadas", "Metas mensuales", "Bonificaciones"],
+      icon: DollarSign,
+      color: "text-gray-400",
+      bgColor: "bg-gray-100",
+      borderColor: "border-gray-300",
+      available: false
     },
   ]
 

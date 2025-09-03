@@ -115,6 +115,13 @@ interface AgreementFormData {
   fixedPriceConfirmation?: string
   priceStability?: string[]
   priceJustification?: string
+  
+  // Campos específicos para tasas-longtail
+  longtailMarket?: string
+  longtailRate?: string
+  longtailMarketConfirmation?: string
+  longtailSegmentation?: string[]
+  longtailJustification?: string
 }
 
 interface ValidationErrors {
@@ -337,31 +344,6 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
 
   const agreementTypes = [
     {
-      id: "PxE",
-      title: "Pricing por Escala",
-      description: "Precios basados en volumen de negocio",
-      features: ["Umbrales de TPV", "Descuentos progresivos", "Revisión trimestral"],
-    },
-    {
-      id: "always-on",
-      title: "Campañas",
-      description: "Campañas permanentes sin fecha de fin",
-      features: ["Sin vencimiento", "Activación automática", "Monitoreo continuo"],
-    },
-    {
-      id: "audience",
-      title: "Audiencias Específicas",
-      description: "Precios personalizados para segmentos",
-      features: ["Targeting avanzado", "Precios fijos", "Duración flexible"],
-    },
-    {
-      id: "ISCA",
-      title: "ISCA",
-      description: "Incentivos por volumen de transacciones",
-      features: ["Comisiones escalonadas", "Metas mensuales", "Bonificaciones"],
-      disabled: true,
-    },
-    {
       id: "estrategia-precios",
       title: "Estrategia de Precios",
       description: "Estrategias de pricing dinámicas y competitivas",
@@ -372,6 +354,31 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
       title: "Precios Fijos",
       description: "Precios estables y predecibles sin variaciones",
       features: ["Precios constantes", "Sin fluctuaciones", "Fácil planificación"],
+    },
+    {
+      id: "always-on",
+      title: "Campañas",
+      description: "Campañas permanentes sin fecha de fin",
+      features: ["Sin vencimiento", "Activación automática", "Monitoreo continuo"],
+    },
+    {
+      id: "PxE",
+      title: "Pricing por Escala",
+      description: "Precios basados en volumen de negocio",
+      features: ["Umbrales de TPV", "Descuentos progresivos", "Revisión trimestral"],
+    },
+    {
+      id: "tasas-longtail",
+      title: "Tasas Longtail",
+      description: "Tasas especializadas para nichos de mercado",
+      features: ["Mercados específicos", "Tasas diferenciadas", "Segmentación avanzada"],
+    },
+    {
+      id: "ISCA",
+      title: "ISCA",
+      description: "Incentivos por volumen de transacciones",
+      features: ["Comisiones escalonadas", "Metas mensuales", "Bonificaciones"],
+      disabled: true,
     },
   ]
 
@@ -411,6 +418,14 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
         // Validar que se haya definido un precio fijo
         if (!formData.fixedPrice) errors.fixedPrice = "El precio fijo es requerido"
         if (formData.fixedPrice && parseFloat(formData.fixedPrice) <= 0) errors.fixedPrice = "El precio debe ser mayor a 0"
+      }
+      
+      // Para tasas-longtail, campos adicionales específicos
+      if (formData.type === "tasas-longtail") {
+        // Validar que se haya definido un mercado específico
+        if (!formData.longtailMarket) errors.longtailMarket = "El mercado específico es requerido"
+        if (!formData.longtailRate) errors.longtailRate = "La tasa longtail es requerida"
+        if (formData.longtailRate && parseFloat(formData.longtailRate) <= 0) errors.longtailRate = "La tasa debe ser mayor a 0"
       }
       
       if (!formData.startDate) errors.startDate = "La fecha de inicio es requerida"
@@ -454,6 +469,11 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
     // Para precios-fijos, agregar campos específicos
     if (formData.type === "precios-fijos") {
       step1Fields = [...step1Fields, 'fixedPrice']
+    }
+    
+    // Para tasas-longtail, agregar campos específicos
+    if (formData.type === "tasas-longtail") {
+      step1Fields = [...step1Fields, 'longtailMarket', 'longtailRate']
     }
     
     const stepFields = {
@@ -1386,6 +1406,45 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                           )}
                         </div>
                       )}
+                      
+                      {/* Campos específicos para tasas longtail */}
+                      {formData.type === "tasas-longtail" && (
+                        <>
+                          <div>
+                            <Label htmlFor="longtailMarket" className="text-sm font-medium">
+                              Mercado específico *
+                            </Label>
+                            <Input
+                              id="longtailMarket"
+                              placeholder="Ej: E-commerce de lujo, SaaS B2B, etc."
+                              value={formData.longtailMarket || ""}
+                              onChange={(e) => setFormData({ ...formData, longtailMarket: e.target.value })}
+                              onBlur={() => markFieldAsTouched("longtailMarket")}
+                              className={shouldShowError("longtailMarket") && validationErrors.longtailMarket ? "border-red-500" : ""}
+                            />
+                            {shouldShowError("longtailMarket") && validationErrors.longtailMarket && (
+                              <p className="text-red-500 text-sm mt-1">{validationErrors.longtailMarket}</p>
+                            )}
+                          </div>
+                          <div>
+                            <Label htmlFor="longtailRate" className="text-sm font-medium">
+                              Tasa longtail *
+                            </Label>
+                            <Input
+                              id="longtailRate"
+                              type="number"
+                              placeholder="0.00"
+                              value={formData.longtailRate || ""}
+                              onChange={(e) => setFormData({ ...formData, longtailRate: e.target.value })}
+                              onBlur={() => markFieldAsTouched("longtailRate")}
+                              className={shouldShowError("longtailRate") && validationErrors.longtailRate ? "border-red-500" : ""}
+                            />
+                            {shouldShowError("longtailRate") && validationErrors.longtailRate && (
+                              <p className="text-red-500 text-sm mt-1">{validationErrors.longtailRate}</p>
+                            )}
+                          </div>
+                        </>
+                      )}
 
                       <div>
                         <Label htmlFor="expectedTPV" className="text-sm font-medium">
@@ -1812,6 +1871,7 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
               <h2 className="text-2xl font-bold mb-2">
                 {formData.type === "estrategia-precios" ? "Configuración de Estrategia" : 
                  formData.type === "precios-fijos" ? "Configuración de Precios Fijos" : 
+                 formData.type === "tasas-longtail" ? "Configuración de Tasas Longtail" :
                  "Configuración de Escalas"}
               </h2>
               <p className="text-gray-600">
@@ -1819,6 +1879,8 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                   ? "Define los parámetros de tu estrategia de precios dinámicos"
                   : formData.type === "precios-fijos"
                   ? "Configura los precios estables y predecibles"
+                  : formData.type === "tasas-longtail"
+                  ? "Configura las tasas especializadas para nichos de mercado"
                   : "Define las escalas de pricing para el acuerdo"
                 }
               </p>
@@ -1832,6 +1894,8 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                     ? "Configura los parámetros de tu estrategia de precios dinámicos y competitivos."
                     : formData.type === "precios-fijos"
                     ? "Configura los precios estables que se mantendrán constantes durante todo el período del acuerdo."
+                    : formData.type === "tasas-longtail"
+                    ? "Configura las tasas especializadas para mercados específicos y segmentación avanzada."
                     : "Configura los costos por método de pago según el plazo elegido para recibir el dinero."
                   }
                 </p>
@@ -2002,6 +2066,76 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                         placeholder="Explica por qué se establece un precio fijo y sus beneficios..."
                         value={formData.priceJustification || ""}
                         onChange={(e) => setFormData({ ...formData, priceJustification: e.target.value })}
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                  </div>
+                </MPCard>
+              )}
+
+              {/* Contenido específico para tasas-longtail */}
+              {formData.type === "tasas-longtail" && (
+                <MPCard className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Configuración de Tasas Longtail</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="longtailMarketConfirmation" className="text-sm font-medium">
+                        Mercado específico confirmado *
+                      </Label>
+                      <Input
+                        id="longtailMarketConfirmation"
+                        placeholder="Ej: E-commerce de lujo, SaaS B2B, etc."
+                        value={formData.longtailMarketConfirmation || ""}
+                        onChange={(e) => setFormData({ ...formData, longtailMarketConfirmation: e.target.value })}
+                        className="text-lg font-semibold"
+                      />
+                      <p className="text-sm text-gray-500 mt-1">
+                        Define el nicho de mercado específico para estas tasas
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="longtailSegmentation" className="text-sm font-medium">
+                        Segmentación avanzada
+                      </Label>
+                      <div className="space-y-2">
+                        {[
+                          { id: "industry-specific", label: "Específico por industria" },
+                          { id: "size-based", label: "Basado en tamaño de empresa" },
+                          { id: "geographic", label: "Segmentación geográfica" },
+                          { id: "behavioral", label: "Segmentación por comportamiento" }
+                        ].map((segment) => (
+                          <div key={segment.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={segment.id}
+                              checked={formData.longtailSegmentation?.includes(segment.id) || false}
+                              onChange={(e) => {
+                                const currentSegments = formData.longtailSegmentation || []
+                                const newSegments = e.target.checked
+                                  ? [...currentSegments, segment.id]
+                                  : currentSegments.filter((s: string) => s !== segment.id)
+                                setFormData({ ...formData, longtailSegmentation: newSegments })
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <Label htmlFor={segment.id} className="text-sm">
+                              {segment.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="longtailJustification" className="text-sm font-medium">
+                        Justificación de tasas longtail
+                      </Label>
+                      <Textarea
+                        id="longtailJustification"
+                        placeholder="Explica por qué se requieren tasas específicas para este mercado y sus beneficios..."
+                        value={formData.longtailJustification || ""}
+                        onChange={(e) => setFormData({ ...formData, longtailJustification: e.target.value })}
                         className="min-h-[100px]"
                       />
                     </div>
@@ -2907,6 +3041,11 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
       // Para precios-fijos, agregar campos específicos
       if (formData.type === "precios-fijos") {
         fieldsToValidate = [...fieldsToValidate, 'fixedPrice']
+      }
+      
+      // Para tasas-longtail, agregar campos específicos
+      if (formData.type === "tasas-longtail") {
+        fieldsToValidate = [...fieldsToValidate, 'longtailMarket', 'longtailRate']
       }
                       
                       return fieldsToValidate.map((field: string) => {
