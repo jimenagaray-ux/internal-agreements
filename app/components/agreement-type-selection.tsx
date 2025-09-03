@@ -8,7 +8,9 @@ import {
   DollarSign, 
   Users, 
   Target, 
-  Zap
+  Zap,
+  TrendingUp,
+  Lock
 } from "lucide-react"
 
 interface AgreementTypeSelectionProps {
@@ -61,6 +63,28 @@ export function AgreementTypeSelection({ onBack, onSelectType }: AgreementTypeSe
       bgColor: "bg-gray-100",
       borderColor: "border-gray-300",
       available: false
+    },
+    {
+      id: "estrategia-precios",
+      title: "Estrategia de Precios",
+      description: "Estrategias de pricing dinámicas y competitivas",
+      features: ["Análisis de mercado", "Precios dinámicos", "Optimización automática"],
+      icon: TrendingUp,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+      available: true
+    },
+    {
+      id: "precios-fijos",
+      title: "Precios Fijos",
+      description: "Precios estables y predecibles sin variaciones",
+      features: ["Precios constantes", "Sin fluctuaciones", "Fácil planificación"],
+      icon: Lock,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50",
+      borderColor: "border-indigo-200",
+      available: true
     },
   ]
 

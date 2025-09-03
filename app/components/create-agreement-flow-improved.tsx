@@ -52,7 +52,7 @@ interface CreateAgreementFlowImprovedProps {
   preselectedType?: string
 }
 
-interface FormData {
+interface AgreementFormData {
   // Información básica
   type: string  // Tipo de acuerdo seleccionado
   name: string
@@ -102,6 +102,19 @@ interface FormData {
   
   // Recálculo (paso 3 - PxE)
   recalculationMonths: number[]
+  
+  // Campos específicos para estrategia-precios
+  strategyType?: string
+  marketAnalysis?: string
+  minPrice?: string
+  maxPrice?: string
+  optimizationGoals?: string[]
+  
+  // Campos específicos para precios-fijos
+  fixedPrice?: string
+  fixedPriceConfirmation?: string
+  priceStability?: string[]
+  priceJustification?: string
 }
 
 interface ValidationErrors {
@@ -204,7 +217,7 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
     { id: '15_days', name: '15 días' }
   ]
   
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<AgreementFormData>({
     type: preselectedType || "",
     name: "",
     description: "",
@@ -348,6 +361,18 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
       features: ["Comisiones escalonadas", "Metas mensuales", "Bonificaciones"],
       disabled: true,
     },
+    {
+      id: "estrategia-precios",
+      title: "Estrategia de Precios",
+      description: "Estrategias de pricing dinámicas y competitivas",
+      features: ["Análisis de mercado", "Precios dinámicos", "Optimización automática"],
+    },
+    {
+      id: "precios-fijos",
+      title: "Precios Fijos",
+      description: "Precios estables y predecibles sin variaciones",
+      features: ["Precios constantes", "Sin fluctuaciones", "Fácil planificación"],
+    },
   ]
 
   // Validación en tiempo real
@@ -373,6 +398,19 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
         
         if (!formData.expectedTPV) errors.expectedTPV = "El TPV esperado es requerido"
         if (formData.expectedTPV && parseFloat(formData.expectedTPV) <= 0) errors.expectedTPV = "El TPV debe ser mayor a 0"
+      }
+      
+      // Para estrategia-precios, campos adicionales específicos
+      if (formData.type === "estrategia-precios") {
+        // Aquí se pueden agregar validaciones específicas para estrategia de precios
+        // Por ejemplo, validar que se haya configurado algún tipo de estrategia
+      }
+      
+      // Para precios-fijos, campos adicionales específicos
+      if (formData.type === "precios-fijos") {
+        // Validar que se haya definido un precio fijo
+        if (!formData.fixedPrice) errors.fixedPrice = "El precio fijo es requerido"
+        if (formData.fixedPrice && parseFloat(formData.fixedPrice) <= 0) errors.fixedPrice = "El precio debe ser mayor a 0"
       }
       
       if (!formData.startDate) errors.startDate = "La fecha de inicio es requerida"
@@ -408,6 +446,16 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
       step1Fields = [...step1Fields, 'budget', 'expectedTPV', 'expectedResults']
     }
     
+    // Para estrategia-precios, agregar campos específicos si es necesario
+    if (formData.type === "estrategia-precios") {
+      // Aquí se pueden agregar campos específicos para estrategia de precios
+    }
+    
+    // Para precios-fijos, agregar campos específicos
+    if (formData.type === "precios-fijos") {
+      step1Fields = [...step1Fields, 'fixedPrice']
+    }
+    
     const stepFields = {
       1: step1Fields,
       2: ['audienceType'],
@@ -439,8 +487,8 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
     }
     
     const requiredFields = stepFields[step as keyof typeof stepFields] || []
-    return requiredFields.every(field => {
-      const fieldValue = formData[field as keyof FormData]
+    return requiredFields.every((field: string) => {
+      const fieldValue = formData[field as keyof AgreementFormData]
       const hasNoError = !validationErrors[field]
       
       // Para strings, verificar que no estén vacíos
@@ -1317,6 +1365,27 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                           <p className="text-red-500 text-sm mt-1">{validationErrors.budget}</p>
                         )}
                       </div>
+                      
+                      {/* Campo específico para precios fijos */}
+                      {formData.type === "precios-fijos" && (
+                        <div>
+                          <Label htmlFor="fixedPrice" className="text-sm font-medium">
+                            Precio fijo *
+                          </Label>
+                          <Input
+                            id="fixedPrice"
+                            type="number"
+                            placeholder="0.00"
+                            value={formData.fixedPrice || ""}
+                            onChange={(e) => setFormData({ ...formData, fixedPrice: e.target.value })}
+                            onBlur={() => markFieldAsTouched("fixedPrice")}
+                            className={shouldShowError("fixedPrice") && validationErrors.fixedPrice ? "border-red-500" : ""}
+                          />
+                          {shouldShowError("fixedPrice") && validationErrors.fixedPrice && (
+                            <p className="text-red-500 text-sm mt-1">{validationErrors.fixedPrice}</p>
+                          )}
+                        </div>
+                      )}
 
                       <div>
                         <Label htmlFor="expectedTPV" className="text-sm font-medium">
@@ -1740,9 +1809,18 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Shield className="w-8 h-8 text-green-600" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">Configuración de Escalas</h2>
+              <h2 className="text-2xl font-bold mb-2">
+                {formData.type === "estrategia-precios" ? "Configuración de Estrategia" : 
+                 formData.type === "precios-fijos" ? "Configuración de Precios Fijos" : 
+                 "Configuración de Escalas"}
+              </h2>
               <p className="text-gray-600">
-                Define las escalas de pricing para el acuerdo
+                {formData.type === "estrategia-precios" 
+                  ? "Define los parámetros de tu estrategia de precios dinámicos"
+                  : formData.type === "precios-fijos"
+                  ? "Configura los precios estables y predecibles"
+                  : "Define las escalas de pricing para el acuerdo"
+                }
               </p>
             </div>
 
@@ -1750,9 +1828,186 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
               {/* Descripción */}
               <div className="text-center">
                 <p className="text-gray-600 text-sm max-w-2xl mx-auto">
-                  Configura los costos por método de pago según el plazo elegido para recibir el dinero.
+                  {formData.type === "estrategia-precios" 
+                    ? "Configura los parámetros de tu estrategia de precios dinámicos y competitivos."
+                    : formData.type === "precios-fijos"
+                    ? "Configura los precios estables que se mantendrán constantes durante todo el período del acuerdo."
+                    : "Configura los costos por método de pago según el plazo elegido para recibir el dinero."
+                  }
                 </p>
               </div>
+
+              {/* Contenido específico para estrategia-precios */}
+              {formData.type === "estrategia-precios" && (
+                <MPCard className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Configuración de Estrategia de Precios</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="strategyType" className="text-sm font-medium">
+                        Tipo de estrategia *
+                      </Label>
+                      <Select
+                        value={formData.strategyType || ""}
+                        onValueChange={(value) => setFormData({ ...formData, strategyType: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona el tipo de estrategia" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="competitive">Precios Competitivos</SelectItem>
+                          <SelectItem value="dynamic">Precios Dinámicos</SelectItem>
+                          <SelectItem value="market-based">Basado en Mercado</SelectItem>
+                          <SelectItem value="value-based">Basado en Valor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="marketAnalysis" className="text-sm font-medium">
+                        Análisis de mercado
+                      </Label>
+                      <Textarea
+                        id="marketAnalysis"
+                        placeholder="Describe el análisis de mercado y competencia..."
+                        value={formData.marketAnalysis || ""}
+                        onChange={(e) => setFormData({ ...formData, marketAnalysis: e.target.value })}
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="minPrice" className="text-sm font-medium">
+                          Precio mínimo
+                        </Label>
+                        <Input
+                          id="minPrice"
+                          type="number"
+                          placeholder="0.00"
+                          value={formData.minPrice || ""}
+                          onChange={(e) => setFormData({ ...formData, minPrice: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="maxPrice" className="text-sm font-medium">
+                          Precio máximo
+                        </Label>
+                        <Input
+                          id="maxPrice"
+                          type="number"
+                          placeholder="0.00"
+                          value={formData.maxPrice || ""}
+                          onChange={(e) => setFormData({ ...formData, maxPrice: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="optimizationGoals" className="text-sm font-medium">
+                        Objetivos de optimización
+                      </Label>
+                      <div className="space-y-2">
+                        {[
+                          { id: "revenue", label: "Maximizar ingresos" },
+                          { id: "volume", label: "Maximizar volumen" },
+                          { id: "market-share", label: "Aumentar participación de mercado" },
+                          { id: "profitability", label: "Optimizar rentabilidad" }
+                        ].map((goal) => (
+                          <div key={goal.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={goal.id}
+                              checked={formData.optimizationGoals?.includes(goal.id) || false}
+                              onChange={(e) => {
+                                const currentGoals = formData.optimizationGoals || []
+                                const newGoals = e.target.checked
+                                  ? [...currentGoals, goal.id]
+                                  : currentGoals.filter((g: string) => g !== goal.id)
+                                setFormData({ ...formData, optimizationGoals: newGoals })
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <Label htmlFor={goal.id} className="text-sm">
+                              {goal.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </MPCard>
+              )}
+
+              {/* Contenido específico para precios-fijos */}
+              {formData.type === "precios-fijos" && (
+                <MPCard className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Configuración de Precios Fijos</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="fixedPriceConfirmation" className="text-sm font-medium">
+                        Precio fijo confirmado *
+                      </Label>
+                      <Input
+                        id="fixedPriceConfirmation"
+                        type="number"
+                        placeholder="0.00"
+                        value={formData.fixedPriceConfirmation || ""}
+                        onChange={(e) => setFormData({ ...formData, fixedPriceConfirmation: e.target.value })}
+                        className="text-lg font-semibold"
+                      />
+                      <p className="text-sm text-gray-500 mt-1">
+                        Este precio se mantendrá constante durante todo el período del acuerdo
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="priceStability" className="text-sm font-medium">
+                        Garantía de estabilidad
+                      </Label>
+                      <div className="space-y-2">
+                        {[
+                          { id: "no-fluctuation", label: "Sin fluctuaciones de precio" },
+                          { id: "predictable-costs", label: "Costos predecibles para el cliente" },
+                          { id: "long-term-stability", label: "Estabilidad a largo plazo" },
+                          { id: "simplified-billing", label: "Facturación simplificada" }
+                        ].map((benefit) => (
+                          <div key={benefit.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={benefit.id}
+                              checked={formData.priceStability?.includes(benefit.id) || false}
+                              onChange={(e) => {
+                                const currentBenefits = formData.priceStability || []
+                                const newBenefits = e.target.checked
+                                  ? [...currentBenefits, benefit.id]
+                                  : currentBenefits.filter((b: string) => b !== benefit.id)
+                                setFormData({ ...formData, priceStability: newBenefits })
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <Label htmlFor={benefit.id} className="text-sm">
+                              {benefit.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="priceJustification" className="text-sm font-medium">
+                        Justificación del precio fijo
+                      </Label>
+                      <Textarea
+                        id="priceJustification"
+                        placeholder="Explica por qué se establece un precio fijo y sus beneficios..."
+                        value={formData.priceJustification || ""}
+                        onChange={(e) => setFormData({ ...formData, priceJustification: e.target.value })}
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                  </div>
+                </MPCard>
+              )}
 
               {/* Configuración de métodos de pago con pestañas */}
               <MPCard className="p-0 overflow-hidden">
@@ -2639,13 +2894,23 @@ export function CreateAgreementFlowImproved({ onBack, onNavigateToInternalAgreem
                       // Campos base para validar (endDate ya no es requerida)
                       let fieldsToValidate = ['name', 'description', 'site', 'team', 'businessUnit', 'type', 'startDate', 'businessUnitPricing']
                       
-                      // Agregar campos adicionales solo si NO es PxE
-                      if (formData.type !== "PxE") {
-                        fieldsToValidate = [...fieldsToValidate, 'budget', 'expectedTPV', 'expectedResults']
-                      }
+                            // Agregar campos adicionales solo si NO es PxE
+      if (formData.type !== "PxE") {
+        fieldsToValidate = [...fieldsToValidate, 'budget', 'expectedTPV', 'expectedResults']
+      }
+      
+      // Para estrategia-precios, agregar campos específicos si es necesario
+      if (formData.type === "estrategia-precios") {
+        // Aquí se pueden agregar campos específicos para validar
+      }
+      
+      // Para precios-fijos, agregar campos específicos
+      if (formData.type === "precios-fijos") {
+        fieldsToValidate = [...fieldsToValidate, 'fixedPrice']
+      }
                       
-                      return fieldsToValidate.map(field => {
-                        const fieldValue = formData[field as keyof FormData]
+                      return fieldsToValidate.map((field: string) => {
+                        const fieldValue = formData[field as keyof AgreementFormData]
                         const hasError = validationErrors[field]
                         const hasValue = fieldValue && String(fieldValue).trim()
                         const isValid = !hasError && hasValue

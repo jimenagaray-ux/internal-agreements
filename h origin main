@@ -1,0 +1,5 @@
+[33mbdc178f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m feat: Mejoras en configuración de acuerdos internos
+[33m30d2931[m[33m ([m[1;31morigin/main[m[33m)[m Actualizar estilos de controles segmentados y otros cambios de UI
+[33m228ec5e[m Eliminar caja informativa azul del paso 1: 'Configuración para Pricing por Escalas'
+[33m265e4be[m Actualizar texto de descripción en paso 1: cambiar 'campaña de marketing' por 'estrategia de escalas'
+[33m0dab840[m Add country flags to application site dropdown
